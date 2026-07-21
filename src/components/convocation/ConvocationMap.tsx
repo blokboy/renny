@@ -16,6 +16,7 @@ import {
 import { ConvocationBattleStage } from "./ConvocationBattleStage";
 import { ConvocationEncounter } from "./ConvocationEncounter";
 import { ConvocationClassChoice } from "./ConvocationClassChoice";
+import { ConvocationHud } from "./ConvocationHud";
 import { ConvocationTrialCard, type TrialCardState } from "./ConvocationTrialCard";
 import { PortraitGate } from "./PortraitGate";
 
@@ -121,11 +122,14 @@ export function ConvocationMap() {
           />
 
           {entranceComplete && (
-            <ConvocationEncounter
-              stop={encounterStop}
-              onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
-              onClose={handleClose}
-            />
+            <>
+              <ConvocationEncounter
+                stop={encounterStop}
+                onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
+                onClose={handleClose}
+              />
+              <ConvocationHud />
+            </>
           )}
         </PortraitGate>
       )}

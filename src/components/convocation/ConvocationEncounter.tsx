@@ -49,12 +49,12 @@ export function ConvocationEncounter({ stop, onComplete, onClose }: ConvocationE
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/75 p-3">
+    <div className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto p-3 pt-6 pb-28 sm:items-center sm:pt-10 sm:pb-32">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="convocation-encounter-title"
-        className="grid max-h-[94vh] w-full max-w-5xl grid-rows-[auto_1fr] overflow-hidden rounded border border-white/25 bg-zinc-950 font-mono text-sm text-white shadow-2xl"
+        className="liquid-glass encounter-glass animate-blur-fade-up grid max-h-[78vh] w-full max-w-5xl grid-rows-[auto_1fr] overflow-hidden rounded-xl font-mono text-sm text-white"
       >
         <header className="flex items-start justify-between gap-3 border-b border-white/15 px-4 py-3">
           <div>

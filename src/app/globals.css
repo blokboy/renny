@@ -132,6 +132,20 @@ body {
   color: #a1a1aa;
 }
 
+/*
+ * Non-interactive counterpart to .trial-card-glass: same frosted-glass
+ * treatment (paired with .liquid-glass) for panels that display content
+ * rather than act as a clickable card, so no hover-invert behavior.
+ */
+.encounter-glass {
+  background: rgba(9, 9, 11, 0.72);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
 @keyframes blurFadeUp {
   from {
     opacity: 0;
