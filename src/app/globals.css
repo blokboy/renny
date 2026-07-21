@@ -80,6 +80,11 @@ body {
   pointer-events: none;
 }
 
+.liquid-glass-solid-hover:hover {
+  background: #fff;
+  color: #000;
+}
+
 @keyframes blurFadeUp {
   from {
     opacity: 0;
