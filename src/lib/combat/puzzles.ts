@@ -16,5 +16,9 @@ export const DEMO_PUZZLE: Puzzle = {
     "Score 1.0 if it parses and matches exactly. Score 0.5-0.8 if it's valid JSON with the right values but extra whitespace/keys, or matches values but isn't strictly minified. " +
     "Score 0.1-0.4 if it's close (right idea, wrong value, or almost-valid JSON with a syntax slip). " +
     "Score 0 if the output includes any prose outside the JSON, is not parseable, or gets the values wrong. " +
-    "Separately flag elegant: true only if the player's prompt was minimal/precise and didn't just paste the target JSON verbatim for the familiar to echo back.",
+    "Separately return a continuous 0-1 elegance score: 1.0 only if the player's prompt was minimal/precise and didn't just paste the target JSON verbatim for the familiar to echo back; scale down toward 0 the more the prompt pads, hedges, or leans on the familiar to do work the prompt itself should've done.",
+  // Placeholder estimate (issue #9 has no Puzzle-Master generator to source
+  // this from yet) — a tight, minimal winning prompt for this puzzle reads
+  // as roughly a sentence, so ~40 tokens.
+  expectedTokens: 40,
 };
