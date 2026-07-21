@@ -146,6 +146,12 @@ body {
     0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
+/* Overrides .liquid-glass:hover's white/black invert — this panel displays content, it isn't a CTA. */
+.encounter-glass:hover {
+  background: rgba(9, 9, 11, 0.72);
+  color: #fff;
+}
+
 @keyframes blurFadeUp {
   from {
     opacity: 0;

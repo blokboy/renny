@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BackgroundVideo } from "@/components/BackgroundVideo";
 import { SPRITE_PRESETS } from "@/lib/assets";
 import { getCharacterDraft } from "@/lib/character";
+import { getBattlegroundForStop } from "@/lib/convocation/battleground";
 import { CONVOCATION_STOPS } from "@/lib/convocation/stops";
 import {
   completeStop,
@@ -128,7 +129,10 @@ export function ConvocationMap() {
                 onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
                 onClose={handleClose}
               />
-              <ConvocationHud />
+              <ConvocationHud
+                playerSpritePresetId={playerSpritePresetId}
+                enemyPresetId={getBattlegroundForStop(encounterStop.id).enemyPresetId}
+              />
             </>
           )}
         </PortraitGate>
