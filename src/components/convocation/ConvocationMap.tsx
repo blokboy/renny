@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { BackgroundVideo } from "@/components/BackgroundVideo";
+import { SPRITE_PRESETS } from "@/lib/assets";
 import { getCharacterDraft } from "@/lib/character";
 import { CONVOCATION_STOPS } from "@/lib/convocation/stops";
 import {
@@ -12,9 +13,11 @@ import {
   resetConvocationProgress,
   subscribeToConvocationProgress,
 } from "@/lib/convocation/progress";
+import { ConvocationBattleStage } from "./ConvocationBattleStage";
 import { ConvocationEncounter } from "./ConvocationEncounter";
 import { ConvocationClassChoice } from "./ConvocationClassChoice";
 import { ConvocationTrialCard, type TrialCardState } from "./ConvocationTrialCard";
+import { PortraitGate } from "./PortraitGate";
 
 function stopState(stopId: number, completedThrough: number): TrialCardState {
   if (stopId <= completedThrough) return "completed";
@@ -30,6 +33,7 @@ export function ConvocationMap() {
     getConvocationProgressServerSnapshot,
   );
   const [encounterStopId, setEncounterStopId] = useState<number | null>(null);
+  const [entranceComplete, setEntranceComplete] = useState(false);
 
   useEffect(() => {
     if (progress.completedThrough >= CONVOCATION_STOPS.length && !getCharacterDraft()) {
@@ -39,15 +43,24 @@ export function ConvocationMap() {
 
   function handleStopClick(stopId: number, state: TrialCardState) {
     if (state !== "current") return;
+    setEntranceComplete(false);
     setEncounterStopId(stopId);
   }
 
   function handleComplete(stopId: number, xpGained: number) {
     completeStop(stopId, xpGained);
     setEncounterStopId(null);
+    setEntranceComplete(false);
+  }
+
+  function handleClose() {
+    setEncounterStopId(null);
+    setEntranceComplete(false);
   }
 
   const encounterStop = CONVOCATION_STOPS.find((stop) => stop.id === encounterStopId) ?? null;
+  const playerSpritePresetId = getCharacterDraft()?.sprite.presetId ?? SPRITE_PRESETS[0].id;
+  const handleEntranceComplete = useCallback(() => setEntranceComplete(true), []);
 
   return (
     <div className="font-early-gameboy relative isolate h-full w-full overflow-hidden bg-black text-white">
@@ -100,11 +113,21 @@ export function ConvocationMap() {
       </div>
 
       {encounterStop && (
-        <ConvocationEncounter
-          stop={encounterStop}
-          onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
-          onClose={() => setEncounterStopId(null)}
-        />
+        <PortraitGate key={encounterStop.id}>
+          <ConvocationBattleStage
+            stopId={encounterStop.id}
+            playerSpritePresetId={playerSpritePresetId}
+            onEntranceComplete={handleEntranceComplete}
+          />
+
+          {entranceComplete && (
+            <ConvocationEncounter
+              stop={encounterStop}
+              onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
+              onClose={handleClose}
+            />
+          )}
+        </PortraitGate>
       )}
 
       {progress.completedThrough >= CONVOCATION_STOPS.length && !encounterStop && (
