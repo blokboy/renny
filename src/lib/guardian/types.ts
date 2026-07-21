@@ -15,7 +15,8 @@ export interface GuardianAlly {
 }
 
 export interface DependencyLock {
-  family: GuardianShieldFamily;
+  kind: "dependency-lock";
+  family: GuardianDependencyFamily;
   puzzle: GuardianPuzzle;
   firstCaster: GuardianAlly;
   npcTask: string;
@@ -24,13 +25,23 @@ export interface DependencyLock {
   playerShard: string;
 }
 
+export interface InterrogationConvergence {
+  kind: "interrogation";
+  family: "Interrogation";
+  puzzle: GuardianPuzzle;
+  hiddenAnswer: string;
+  facts: string[];
+}
+
+export type GuardianShield = DependencyLock | InterrogationConvergence;
+
 export interface GuardianEncounter {
   id: string;
   generatedAt: string;
   playerClassId: ClassId;
   soloPuzzle: GuardianPuzzle;
   allies: GuardianAlly[];
-  dependencyLock: DependencyLock;
+  shield: GuardianShield;
 }
 
 export interface GuardianBattleState {
@@ -51,6 +62,7 @@ export interface GuardianCastRequest {
   currentMana: number;
   phase: "solo" | "shield" | "finish";
   puzzle: GuardianPuzzle;
+  mode?: "standard" | "interrogation-final";
 }
 
 export interface GuardianCastResponse {
@@ -61,10 +73,30 @@ export interface GuardianCastResponse {
   xpGained: number;
 }
 
-export const GUARDIAN_SHIELD_FAMILIES = [
+export const GUARDIAN_DEPENDENCY_FAMILIES = [
   "Multi-hop state tracking",
   "Ambiguity resolution",
   "Reverse-prompt",
 ] as const satisfies readonly PuzzleFamily[];
 
+export type GuardianDependencyFamily = (typeof GUARDIAN_DEPENDENCY_FAMILIES)[number];
+
+export const GUARDIAN_SHIELD_FAMILIES = [
+  ...GUARDIAN_DEPENDENCY_FAMILIES,
+  "Interrogation",
+] as const satisfies readonly PuzzleFamily[];
+
 export type GuardianShieldFamily = (typeof GUARDIAN_SHIELD_FAMILIES)[number];
+
+export type InterrogationAnswer = "yes" | "no";
+
+export interface InterrogationExchange {
+  speakerIndex: number;
+  question: string;
+  answer: InterrogationAnswer;
+}
+
+export interface InterrogationState {
+  exchanges: InterrogationExchange[];
+  finalSubmitted: boolean;
+}

@@ -6,6 +6,9 @@ import {
   type GuardianAlly,
   type GuardianBattleState,
   type GuardianPhase,
+  type InterrogationAnswer,
+  type InterrogationState,
+  type GuardianDependencyFamily,
   type GuardianShieldFamily,
 } from "./types";
 
@@ -51,17 +54,46 @@ export function assignNpcAllies(
 }
 
 export function buildDependencyShard(
-  family: GuardianShieldFamily,
+  family: GuardianDependencyFamily,
   npcOutput: string,
   handoffInstruction: string,
 ): string {
-  const leadByFamily: Record<GuardianShieldFamily, string> = {
+  const leadByFamily: Record<GuardianDependencyFamily, string> = {
     "Multi-hop state tracking": "Your ally's completed ledger is the only valid starting state",
     "Ambiguity resolution": "Your ally has fixed the interpretation the party must now honor",
     "Reverse-prompt": "Your ally has produced the target output your prompt must recreate",
   };
 
   return `${leadByFamily[family]}:\n\n${npcOutput}\n\nYour dependent shard:\n${handoffInstruction}`;
+}
+
+export const INTERROGATION_QUESTION_LIMIT = 4;
+
+export function createInterrogationState(): InterrogationState {
+  return { exchanges: [], finalSubmitted: false };
+}
+
+export function recordInterrogationAnswer(
+  state: InterrogationState,
+  question: string,
+  answer: InterrogationAnswer,
+): InterrogationState {
+  if (state.finalSubmitted || state.exchanges.length >= INTERROGATION_QUESTION_LIMIT) {
+    return state;
+  }
+
+  return {
+    ...state,
+    exchanges: [
+      ...state.exchanges,
+      { speakerIndex: state.exchanges.length, question: question.trim(), answer },
+    ],
+  };
+}
+
+export function submitInterrogationFinal(state: InterrogationState): InterrogationState {
+  if (state.finalSubmitted || state.exchanges.length === 0) return state;
+  return { ...state, finalSubmitted: true };
 }
 
 export function createInitialBattleState(maxHp: number, maxMana: number): GuardianBattleState {
@@ -78,7 +110,13 @@ export function createInitialBattleState(maxHp: number, maxMana: number): Guardi
 
 export function applyGuardianCast(
   state: GuardianBattleState,
-  result: { outcome: Outcome; damage: number; manaCost: number; xpGained: number },
+  result: {
+    outcome: Outcome;
+    damage: number;
+    manaCost: number;
+    xpGained: number;
+    terminalOnFail?: boolean;
+  },
 ): GuardianBattleState {
   if (state.phase === "victory" || state.phase === "defeat") return state;
 
@@ -107,6 +145,7 @@ export function applyGuardianCast(
   if (playerHp === 0 || (playerMana === 0 && phase !== "victory")) {
     phase = "defeat";
   }
+  if (result.outcome === "fail" && result.terminalOnFail) phase = "defeat";
 
   return {
     ...state,

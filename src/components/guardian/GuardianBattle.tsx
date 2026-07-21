@@ -7,13 +7,18 @@ import { TUTORIAL_ZONE_BACKGROUND } from "@/lib/assets";
 import { getCharacter, saveCharacter, type CharacterRecord } from "@/lib/character";
 import {
   applyGuardianCast,
+  createInterrogationState,
   createInitialBattleState,
   GUARDIAN_MAX_HP,
   markGuardianComplete,
+  recordInterrogationAnswer,
+  submitInterrogationFinal,
   type GuardianBattleState,
   type GuardianCastResponse,
   type GuardianEncounter,
   type GuardianPuzzle,
+  type InterrogationAnswer,
+  type InterrogationState,
 } from "@/lib/guardian";
 import { applyXpGain } from "@/lib/xp";
 
@@ -25,7 +30,7 @@ interface BattleLogEntry {
 
 const PHASE_LABEL: Record<GuardianBattleState["phase"], string> = {
   solo: "Solo phase",
-  shield: "Dependency Lock",
+  shield: "Shield phase",
   finish: "Finish",
   victory: "Guardian cleared",
   defeat: "Run ended",
@@ -52,6 +57,9 @@ export function GuardianBattle() {
   const [encounter, setEncounter] = useState<GuardianEncounter | null>(null);
   const [battle, setBattle] = useState<GuardianBattleState | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [question, setQuestion] = useState("");
+  const [interrogation, setInterrogation] = useState<InterrogationState | null>(null);
+  const [finalMode, setFinalMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [log, setLog] = useState<BattleLogEntry[]>([]);
@@ -74,8 +82,11 @@ export function GuardianBattle() {
       if (!response.ok) throw new Error(data.error ?? "The Puzzle-Master did not answer.");
       setEncounter(data);
       setBattle(createInitialBattleState(character.startingHp, character.startingMana));
+      setInterrogation(data.shield.kind === "interrogation" ? createInterrogationState() : null);
+      setFinalMode(false);
       setLog([]);
       setPrompt("");
+      setQuestion("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not begin the encounter.");
     } finally {
@@ -85,7 +96,51 @@ export function GuardianBattle() {
 
   function activePuzzle(): GuardianPuzzle | null {
     if (!encounter || !battle) return null;
-    return battle.phase === "shield" ? encounter.dependencyLock.puzzle : encounter.soloPuzzle;
+    return battle.phase === "shield" ? encounter.shield.puzzle : encounter.soloPuzzle;
+  }
+
+  function currentPhaseLabel(): string {
+    if (battle?.phase === "shield" && encounter?.shield.kind === "interrogation") {
+      return "Interrogation";
+    }
+    if (battle?.phase === "shield") return "Dependency Lock";
+    return battle ? PHASE_LABEL[battle.phase] : "";
+  }
+
+  async function askQuestion(event: React.FormEvent) {
+    event.preventDefault();
+    if (
+      !encounter ||
+      encounter.shield.kind !== "interrogation" ||
+      !battle ||
+      !interrogation ||
+      !question.trim()
+    ) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/guardian/interrogate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          hiddenAnswer: encounter.shield.hiddenAnswer,
+          facts: encounter.shield.facts,
+        }),
+      });
+      const data = (await response.json()) as { answer?: InterrogationAnswer; error?: string };
+      if (!response.ok || !data.answer) throw new Error(data.error ?? "The Guardian did not answer.");
+      const next = recordInterrogationAnswer(interrogation, question, data.answer);
+      setInterrogation(next);
+      setBattle({ ...battle, turn: battle.turn + 1 });
+      setQuestion("");
+      if (next.exchanges.length === 4) setFinalMode(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The Guardian did not answer.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function cast(event: React.FormEvent) {
@@ -93,6 +148,8 @@ export function GuardianBattle() {
     const puzzle = activePuzzle();
     if (!character || !encounter || !battle || !puzzle || !prompt.trim()) return;
     if (battle.phase === "victory" || battle.phase === "defeat") return;
+    const isInterrogationFinal =
+      battle.phase === "shield" && encounter.shield.kind === "interrogation";
 
     setLoading(true);
     setError(null);
@@ -108,6 +165,7 @@ export function GuardianBattle() {
           currentMana: battle.playerMana,
           phase: battle.phase,
           puzzle,
+          mode: isInterrogationFinal ? "interrogation-final" : "standard",
         }),
       });
       const result = (await response.json()) as GuardianCastResponse & { error?: string };
@@ -118,10 +176,14 @@ export function GuardianBattle() {
         damage: result.resolution.damage,
         manaCost: result.manaCost,
         xpGained: result.xpGained,
+        terminalOnFail: isInterrogationFinal,
       });
       setBattle(next);
-      setLog((entries) => [{ turn: battle.turn, phase: PHASE_LABEL[battle.phase], result }, ...entries]);
+      setLog((entries) => [{ turn: battle.turn, phase: currentPhaseLabel(), result }, ...entries]);
       setPrompt("");
+      if (isInterrogationFinal && interrogation) {
+        setInterrogation(submitInterrogationFinal(interrogation));
+      }
 
       const leveled = applyXpGain(
         { level: character.level, xp: character.xp },
@@ -203,7 +265,7 @@ export function GuardianBattle() {
         <div className="min-w-0 border-b border-white/15 p-4 sm:p-6 lg:border-r lg:border-b-0">
           <header className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs text-emerald-300 uppercase">Turn {battle.turn} · {PHASE_LABEL[battle.phase]}</p>
+              <p className="text-xs text-emerald-300 uppercase">Turn {battle.turn} · {currentPhaseLabel()}</p>
               <h1 className="mt-1 text-xl font-bold">{puzzle?.title ?? PHASE_LABEL[battle.phase]}</h1>
             </div>
             {battle.phase === "shield" && (
@@ -215,37 +277,127 @@ export function GuardianBattle() {
             <>
               <div className="mt-4 border-y border-white/10 py-4 text-sm leading-relaxed">
                 <p className="text-zinc-400">{puzzle.flavor}</p>
-                {battle.phase === "shield" && (
+                {battle.phase === "shield" && encounter.shield.kind === "dependency-lock" && (
                   <div className="mt-4 border-l-2 border-cyan-300 bg-cyan-950/25 p-3">
-                    <p className="text-xs text-cyan-200 uppercase">{encounter.dependencyLock.firstCaster.name} casts first</p>
-                    <p className="mt-2 text-zinc-300">{encounter.dependencyLock.firstCaster.castLine}</p>
-                    <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-cyan-100">{encounter.dependencyLock.npcOutput}</pre>
+                    <p className="text-xs text-cyan-200 uppercase">{encounter.shield.firstCaster.name} casts first</p>
+                    <p className="mt-2 text-zinc-300">{encounter.shield.firstCaster.castLine}</p>
+                    <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-cyan-100">{encounter.shield.npcOutput}</pre>
                   </div>
                 )}
                 <p className="mt-4 whitespace-pre-wrap text-white">{puzzle.brief}</p>
               </div>
 
-              <form onSubmit={cast} className="mt-4">
-                <label htmlFor="guardian-prompt" className="text-xs text-zinc-500 uppercase">Your cast</label>
-                <textarea
-                  id="guardian-prompt"
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  disabled={loading}
-                  placeholder="Write the prompt your familiar will receive..."
-                  className="mt-2 min-h-32 w-full resize-y border border-white/20 bg-black/45 p-3 text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
-                />
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <span className="text-xs text-zinc-500">Family: {puzzle.family}</span>
-                  <button
-                    type="submit"
-                    disabled={loading || !prompt.trim()}
-                    className="rounded bg-emerald-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-emerald-200 disabled:opacity-35"
-                  >
-                    {loading ? "Casting..." : "Cast"}
-                  </button>
+              {battle.phase === "shield" && encounter.shield.kind === "interrogation" && interrogation && (
+                <div className="mt-4 border-y border-white/10 py-4">
+                  <p className="text-xs text-zinc-500 uppercase">Party chat</p>
+                  {interrogation.exchanges.length === 0 ? (
+                    <p className="mt-2 text-sm text-zinc-600">No questions answered yet.</p>
+                  ) : (
+                    <ol className="mt-3 space-y-3">
+                      {interrogation.exchanges.map((exchange) => {
+                        const speaker = exchange.speakerIndex === 0
+                          ? character.name
+                          : encounter.allies[exchange.speakerIndex - 1].name;
+                        return (
+                          <li key={exchange.speakerIndex} className="border-l-2 border-cyan-300/50 pl-3 text-sm">
+                            <p className="text-xs text-cyan-200">{speaker}</p>
+                            <p className="mt-1 text-zinc-300">{exchange.question}</p>
+                            <p className="mt-1 font-bold uppercase text-white">Guardian: {exchange.answer}</p>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
                 </div>
-              </form>
+              )}
+
+              {battle.phase === "shield" &&
+              encounter.shield.kind === "interrogation" &&
+              interrogation &&
+              !finalMode ? (
+                <form onSubmit={askQuestion} className="mt-4">
+                  <label htmlFor="guardian-question" className="text-xs text-zinc-500 uppercase">
+                    Question {interrogation.exchanges.length + 1} of 4 · {interrogation.exchanges.length === 0
+                      ? character.name
+                      : encounter.allies[interrogation.exchanges.length - 1].name}
+                  </label>
+                  <textarea
+                    id="guardian-question"
+                    value={question}
+                    onChange={(event) => setQuestion(event.target.value)}
+                    disabled={loading}
+                    placeholder="Author this party member's yes/no question..."
+                    className="mt-2 min-h-28 w-full resize-y border border-white/20 bg-black/45 p-3 text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
+                  />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs text-zinc-500">Each party member gets one question.</span>
+                    <div className="flex flex-wrap gap-2">
+                      {interrogation.exchanges.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFinalMode(true)}
+                          className="rounded border border-emerald-300/60 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
+                        >
+                          Submit joint prompt
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={loading || !question.trim()}
+                        className="rounded bg-cyan-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-cyan-200 disabled:opacity-35"
+                      >
+                        {loading ? "Asking..." : "Ask Guardian"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={cast} className="mt-4">
+                  <label htmlFor="guardian-prompt" className="text-xs text-zinc-500 uppercase">
+                    {battle.phase === "shield" && encounter.shield.kind === "interrogation"
+                      ? "Final joint prompt"
+                      : "Your cast"}
+                  </label>
+                  <textarea
+                    id="guardian-prompt"
+                    value={prompt}
+                    onChange={(event) => setPrompt(event.target.value)}
+                    disabled={loading}
+                    placeholder={battle.phase === "shield" && encounter.shield.kind === "interrogation"
+                      ? "Write one prompt intended to reproduce the hidden answer..."
+                      : "Write the prompt your familiar will receive..."}
+                    className="mt-2 min-h-32 w-full resize-y border border-white/20 bg-black/45 p-3 text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
+                  />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs text-zinc-500">Family: {puzzle.family}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {battle.phase === "shield" &&
+                        encounter.shield.kind === "interrogation" &&
+                        interrogation &&
+                        interrogation.exchanges.length < 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setFinalMode(false)}
+                            className="rounded border border-white/20 px-4 py-2 text-xs hover:bg-white/10"
+                          >
+                            Ask another question
+                          </button>
+                        )}
+                      <button
+                        type="submit"
+                        disabled={loading || !prompt.trim()}
+                        className="rounded bg-emerald-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-emerald-200 disabled:opacity-35"
+                      >
+                        {loading
+                          ? "Casting..."
+                          : battle.phase === "shield" && encounter.shield.kind === "interrogation"
+                            ? "Commit final prompt"
+                            : "Cast"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
             </>
           )}
 
@@ -273,11 +425,11 @@ export function GuardianBattle() {
 
         <aside className="min-w-0 p-4 sm:p-6">
           <p className="text-xs text-zinc-500 uppercase">Party</p>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {encounter.allies.map((ally) => (
-              <div key={ally.classId} className="border border-white/15 bg-white/5 p-2 text-center">
-                <span className="block text-lg text-cyan-200">{ally.name.slice(0, 1)}</span>
-                <span className="text-[10px] text-zinc-400">{ally.name}</span>
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            {[{ classId: "player", name: character.name }, ...encounter.allies].map((member) => (
+              <div key={member.classId} className="min-w-0 border border-white/15 bg-white/5 p-2 text-center">
+                <span className="block text-lg text-cyan-200">{member.name.slice(0, 1)}</span>
+                <span className="block truncate text-[10px] text-zinc-400" title={member.name}>{member.name}</span>
               </div>
             ))}
           </div>

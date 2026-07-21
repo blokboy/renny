@@ -3,6 +3,7 @@ import { isWithinTokenBudget, getTokenBudget } from "@/lib/character/tokens";
 import { rollCrit, resolveOutcome } from "@/lib/combat/resolve";
 import { PUZZLE_FAMILIES } from "@/lib/combat/typeChart";
 import type { GuardianCastRequest, GuardianCastResponse, GuardianPuzzle } from "@/lib/guardian";
+import { normalizeInterrogationJudge } from "@/lib/guardian/interrogation";
 import { castFamiliar } from "@/lib/familiar/cast";
 import { judgeCast } from "@/lib/judge/judge";
 import { BASE_XP_PER_CAST, estimateTokens, getXpForCast } from "@/lib/xp";
@@ -66,19 +67,24 @@ export async function POST(request: Request) {
     return Response.json({ error: `Not enough mana. This cast costs ${manaCost}.` }, { status: 400 });
   }
   const familiarOutput = await castFamiliar(prompt, body.classId);
-  const judge = await judgeCast(familiarOutput, body.puzzle);
-  const isCrit = rollCrit(judge.score, body.stats.lck);
-  const resolution = resolveOutcome(judge.score, body.stats.str, isCrit);
-  const xpGained = getXpForCast(
-    BASE_XP_PER_CAST,
-    estimateTokens(prompt),
-    body.puzzle.expectedTokens,
-    judge.elegance,
-  );
+  const judged = await judgeCast(familiarOutput, body.puzzle);
+  const normalized = body.mode === "interrogation-final"
+    ? normalizeInterrogationJudge(judged)
+    : { judge: judged, correct: true };
+  const isCrit = normalized.correct && rollCrit(normalized.judge.score, body.stats.lck);
+  const resolution = resolveOutcome(normalized.judge.score, body.stats.str, isCrit);
+  const xpGained = normalized.correct
+    ? getXpForCast(
+        BASE_XP_PER_CAST,
+        estimateTokens(prompt),
+        body.puzzle.expectedTokens,
+        normalized.judge.elegance,
+      )
+    : 0;
 
   const result: GuardianCastResponse = {
     familiarOutput,
-    judge,
+    judge: normalized.judge,
     resolution,
     manaCost,
     xpGained,

@@ -5,10 +5,13 @@ import {
   assignNpcAllies,
   buildDependencyShard,
   createInitialBattleState,
+  createInterrogationState,
   DIAGNOSTIC_FAMILY_BY_CLASS,
   GUARDIAN_MAX_HP,
   GUARDIAN_SHIELD_THRESHOLD,
   pickShieldFamily,
+  recordInterrogationAnswer,
+  submitInterrogationFinal,
 } from "./encounter";
 
 describe("Threshold Guardian encounter", () => {
@@ -24,11 +27,12 @@ describe("Threshold Guardian encounter", () => {
     });
   });
 
-  it("rolls evenly across the three issue #11 Dependency-Lock families", () => {
+  it("rolls evenly across all four shield families", () => {
     assert.equal(pickShieldFamily(() => 0), "Multi-hop state tracking");
-    assert.equal(pickShieldFamily(() => 0.34), "Ambiguity resolution");
-    assert.equal(pickShieldFamily(() => 0.67), "Reverse-prompt");
-    assert.equal(pickShieldFamily(() => 0.999), "Reverse-prompt");
+    assert.equal(pickShieldFamily(() => 0.25), "Ambiguity resolution");
+    assert.equal(pickShieldFamily(() => 0.5), "Reverse-prompt");
+    assert.equal(pickShieldFamily(() => 0.75), "Interrogation");
+    assert.equal(pickShieldFamily(() => 0.999), "Interrogation");
   });
 
   it("assigns three distinct allies and excludes the player class", () => {
@@ -48,6 +52,30 @@ describe("Threshold Guardian encounter", () => {
     assert.match(shard, /only valid starting state/i);
     assert.match(shard, /state=17; key=blue/);
     assert.match(shard, /Advance the state twice/);
+  });
+
+  it("allows one authored question per party member and an early final submission", () => {
+    const empty = createInterrogationState();
+    assert.equal(submitInterrogationFinal(empty).finalSubmitted, false);
+
+    const oneAnswer = recordInterrogationAnswer(empty, "Does it mention a key?", "yes");
+    assert.deepEqual(oneAnswer.exchanges[0], {
+      speakerIndex: 0,
+      question: "Does it mention a key?",
+      answer: "yes",
+    });
+    assert.equal(submitInterrogationFinal(oneAnswer).finalSubmitted, true);
+
+    let fourAnswers = empty;
+    for (let index = 0; index < 5; index += 1) {
+      fourAnswers = recordInterrogationAnswer(
+        fourAnswers,
+        `Is clue ${index + 1} true?`,
+        index % 2 === 0 ? "yes" : "no",
+      );
+    }
+    assert.equal(fourAnswers.exchanges.length, 4);
+    assert.deepEqual(fourAnswers.exchanges.map(({ speakerIndex }) => speakerIndex), [0, 1, 2, 3]);
   });
 
   it("stops at the shield threshold, requires a shield hit, then permits the finish", () => {
@@ -101,5 +129,19 @@ describe("Threshold Guardian encounter", () => {
     });
     assert.equal(defeated.playerHp, 0);
     assert.equal(defeated.phase, "defeat");
+  });
+
+  it("makes a wrong Interrogation final terminal after applying its fail penalty", () => {
+    const initial = { ...createInitialBattleState(100, 100), phase: "shield" as const };
+    const defeated = applyGuardianCast(initial, {
+      outcome: "fail",
+      damage: 50,
+      manaCost: 5,
+      xpGained: 0,
+      terminalOnFail: true,
+    });
+    assert.equal(defeated.playerHp, 50);
+    assert.equal(defeated.phase, "defeat");
+    assert.equal(defeated.totalXpGained, 0);
   });
 });

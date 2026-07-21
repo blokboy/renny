@@ -99,7 +99,10 @@ decisions; each glossary entry below points at the ADR that resolved it.
 - **Guardian encounter** — the first generated battle, represented by a `GuardianEncounter`
   definition plus pure `GuardianBattleState` transitions in `src/lib/guardian`.
 - **Dependency Lock** — a shield-phase convergence puzzle where an NPC's generated output is
-  embedded into the player's later shard; issue #11 rolls evenly across Multi-hop, Ambiguity,
-  and Reverse-prompt. Interrogation remains owned by issue #12.
+  embedded into the player's later shard; its families are Multi-hop, Ambiguity, and
+  Reverse-prompt.
+- **Interrogation convergence** — the fourth evenly weighted Guardian shield family: four
+  ordered, individually authored yes/no questions (one per party member) feed one final joint
+  reverse prompt. Final scoring is win-or-zero with no partial credit.
 - **Guardian completion** — a browser-persisted victory marker written by
   `markGuardianComplete`, intended to gate the Town Hub in issue #13.
