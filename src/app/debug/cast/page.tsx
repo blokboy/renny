@@ -75,7 +75,7 @@ export default function DebugCastPage() {
           <div className="rounded border border-neutral-500/30 p-4">
             <h3 className="font-bold">Judge</h3>
             <p className="mt-2">score: {result.judge.score}</p>
-            <p>elegant: {String(result.judge.elegant)}</p>
+            <p>elegance: {result.judge.elegance}</p>
             <p>feedback: {result.judge.feedback}</p>
           </div>
 

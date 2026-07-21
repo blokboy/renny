@@ -76,6 +76,8 @@ export function CreationWizard() {
       stats,
       startingHp: getStartingHp(stats),
       startingMana: getStartingMana(stats),
+      level: 1,
+      xp: 0,
       createdAt: new Date().toISOString(),
     };
     saveCharacter(record);

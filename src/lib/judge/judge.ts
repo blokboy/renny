@@ -8,7 +8,7 @@ import type { JudgeResult, Puzzle } from "@/lib/combat/types";
 // Judge asks for plain JSON text and validates it here instead.
 const judgeResponseSchema = z.object({
   score: z.number().min(0).max(1),
-  elegant: z.boolean(),
+  elegance: z.number().min(0).max(1),
   feedback: z.string(),
 });
 
@@ -25,9 +25,11 @@ export async function judgeCast(
     model: getJudgeModel(),
     system:
       "You are the Judge in a prompt-engineering RPG. Score a familiar's output " +
-      "against the given rubric. Be strict and consistent. Respond with ONLY " +
-      'minified JSON matching {"score": number 0-1, "elegant": boolean, ' +
-      '"feedback": string} — no markdown fences, no other text.',
+      "against the given rubric. Be strict and consistent. Also return a continuous " +
+      "0-1 elegance score — how minimal/precise the player's prompt was, not how good " +
+      "the familiar's output was. Respond with ONLY minified JSON matching " +
+      '{"score": number 0-1, "elegance": number 0-1, "feedback": string} — no markdown ' +
+      "fences, no other text.",
     prompt:
       `Rubric:\n${puzzle.rubric}\n\n` +
       `Familiar's output:\n${familiarOutput}`,
