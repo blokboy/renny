@@ -8,4 +8,5 @@ export * from "./types";
 export * from "./classes";
 export * from "./starting-stats";
 export * from "./mana";
+export * from "./tokens";
 export * from "./storage";
