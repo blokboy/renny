@@ -19,6 +19,8 @@ export type Outcome = "hit" | "miss" | "fail";
 export interface ResolvedCast {
   outcome: Outcome;
   damage: number;
+  /** LCK-driven crit (issue #5) — a near-perfect score rolled a crit multiplier. */
+  isCrit: boolean;
 }
 
 export interface CastResult {

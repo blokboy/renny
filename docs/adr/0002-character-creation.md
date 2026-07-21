@@ -15,9 +15,10 @@ Two real gaps existed against this issue at implementation time:
 
 1. **No backend.** There is no database/auth in this repo (see
    `package.json`) and none is in scope here.
-2. **No stat/mana system yet.** Issue #5 ("Stats & Mana Economy") owns the
-   real 5-stat point-buy system and mana pool sizing, and is not implemented
-   — Character Creation is one of its two blockers. `prompt-quest-full-spec.md`
+2. **No stat/mana system yet, at implementation time.** Issue #5 ("Stats &
+   Mana Economy") owns the real 5-stat mechanics and mana cost model, and was
+   not implemented yet — Character Creation is one of its two blockers.
+   (Since resolved; see docs/adr/0003-stats-mana-economy.md.) `prompt-quest-full-spec.md`
    §5.3 defines the 5 stats (STR/INT/WIS/SPD/LCK, superseding the design
    doc's original 4-bar display) and §5.1 defines the mana cost *shape*
    (`effective cost = baseline ÷ divisor`, baseline = 10% of max mana), but
@@ -47,9 +48,11 @@ classes on the creation screen's stat bars (e.g. Wizard highest INT but
 lowest WIS, matching its "mana-starved" flavor; Knight high STR+WIS as the
 tank/spine; Monk low INT/WIS, high SPD/LCK, matching its word-capped,
 free-cast identity). Starting HP/mana are simple linear formulas off
-STR/WIS respectively, also in that file. None of this is expected to survive
-issue #5 — the whole file is designed to be replaceable wholesale once the
-real point-buy system lands.
+STR/WIS respectively, also in that file.
+
+**Update (issue #5):** these starting values shipped unchanged as the real,
+official Level-1 stats — see docs/adr/0003-stats-mana-economy.md for the
+growth curve and stat mechanics built on top of them.
 
 `src/lib/character/mana.ts` implements the baseline-cost fraction (10% of
 max mana, taken directly from `prompt-quest-full-spec.md` §5.1 — this part

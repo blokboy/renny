@@ -23,12 +23,29 @@ decisions; each glossary entry below points at the ADR that resolved it.
   config, starting stats, starting HP/mana. Saved via `saveCharacter`/`getCharacter`
   (`src/lib/character/storage.ts`), currently backed by `localStorage` — no database exists
   yet. See `docs/adr/0002-character-creation.md`.
-- **Starting stats/mana** — provisional placeholders (`src/lib/character/starting-stats.ts`),
-  pending issue #5 (Stats & Mana Economy). Not final numbers; isolated in one file so #5 can
-  replace them wholesale.
+- **Starting stats** — per-class Level-1 `CharacterStats` (`src/lib/character/starting-stats.ts`).
+  Shipped as an issue #3 placeholder, kept as-is and finalized by issue #5. See
+  `docs/adr/0003-stats-mana-economy.md`.
 - **Spell cost model** — a named skill is either `free` or a multiplier on the *baseline*
   mana cost (10% of max mana, per `prompt-quest-full-spec.md` §5.1). See
   `src/lib/character/mana.ts`.
 - **Ward** — each class's unique anti-injection spell (name/flavor only here; mechanics
   belong to issue #7, still open). Shown on the class picker alongside the Lv1/25/50/75/100
   spell list.
+
+## Stats & Mana Economy (issue #5, ADR 0003)
+
+- **Stat growth** — `getStatsAtLevel(classId, level)` (`src/lib/character/starting-stats.ts`):
+  a *pure* function recomputing a character's current 5 stats from its Level-1 starting stats
+  and a per-class `STAT_GROWTH_PER_LEVEL` table, rather than an incremental mutator. Issue #9's
+  leveling engine calls this and re-saves the result on every level change.
+- **Cast mana cost** — `getCastManaCost` (`src/lib/character/mana.ts`): the baseline cost (10%
+  of max mana × the spell's surcharge/discount multiplier) run through the type-chart's cost
+  divisor (`getEffectiveCost`, issue #6) for the puzzle's family tag. Distinct from
+  `resolveSpellCost`, the creation-screen display path with no puzzle/divisor in play yet.
+- **Crit (LCK)** — `rollCrit(score, lck)` (`src/lib/combat/resolve.ts`): only a near-perfect
+  judge score (≥0.9) is crit-eligible at all; LCK sets the chance within that. Distinct from
+  `typeChart.ts`'s `getCritChance`, which is Monk's own puzzle-family crit table (issue #6) —
+  a different, unrelated mechanic that happens to share the word "crit."
+- **Turn order (SPD)** — `getTurnOrder` (`src/lib/combat/turnOrder.ts`): a stable sort by SPD,
+  descending. No multi-actor battle loop exists yet to consume it.
