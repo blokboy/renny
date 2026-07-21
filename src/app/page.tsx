@@ -54,8 +54,8 @@ export default function Home() {
         </a>
       </nav>
 
-      <section className="relative z-10 flex flex-1 flex-col justify-end px-4 pb-8 sm:px-6 md:px-12 md:pb-16">
-        <div className="min-w-0">
+      <section className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 text-center sm:px-6 md:items-stretch md:justify-end md:px-12 md:pb-16 md:text-left">
+        <div className="flex min-w-0 flex-col items-center md:items-start">
           <div
             className="animate-blur-fade-up mb-6 flex flex-wrap items-center gap-3 text-xs sm:mb-8 sm:gap-6 sm:text-sm"
             style={delay(300)}
@@ -82,7 +82,7 @@ export default function Home() {
 
           <Link
             href="/character/create"
-            className="liquid-glass liquid-glass-solid-hover animate-blur-fade-up flex w-fit items-center gap-2 rounded-full px-6 py-2.5 font-medium transition-all hover:scale-[1.03] sm:px-8 sm:py-3"
+            className="liquid-glass animate-blur-fade-up flex w-fit items-center gap-2 rounded-full px-6 py-2.5 font-medium hover:scale-[1.03] sm:px-8 sm:py-3"
             style={delay(600)}
           >
             <Play size={18} aria-hidden="true" />
