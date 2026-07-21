@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useSyncExternalStore } from "react";
-import { SceneBackground } from "@/components/assets";
-import { TUTORIAL_ZONE_BACKGROUND } from "@/lib/assets";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { BackgroundVideo } from "@/components/BackgroundVideo";
+import { getCharacterDraft } from "@/lib/character";
 import { CONVOCATION_STOPS } from "@/lib/convocation/stops";
 import {
   completeStop,
@@ -14,16 +14,16 @@ import {
 } from "@/lib/convocation/progress";
 import { ConvocationEncounter } from "./ConvocationEncounter";
 import { ConvocationClassChoice } from "./ConvocationClassChoice";
+import { ConvocationTrialCard, type TrialCardState } from "./ConvocationTrialCard";
 
-type StopState = "completed" | "current" | "locked";
-
-function stopState(stopId: number, completedThrough: number): StopState {
+function stopState(stopId: number, completedThrough: number): TrialCardState {
   if (stopId <= completedThrough) return "completed";
   if (stopId === completedThrough + 1) return "current";
   return "locked";
 }
 
 export function ConvocationMap() {
+  const router = useRouter();
   const progress = useSyncExternalStore(
     subscribeToConvocationProgress,
     getConvocationProgressSnapshot,
@@ -31,7 +31,13 @@ export function ConvocationMap() {
   );
   const [encounterStopId, setEncounterStopId] = useState<number | null>(null);
 
-  function handleStopClick(stopId: number, state: StopState) {
+  useEffect(() => {
+    if (progress.completedThrough >= CONVOCATION_STOPS.length && !getCharacterDraft()) {
+      router.replace("/character/create");
+    }
+  }, [progress.completedThrough, router]);
+
+  function handleStopClick(stopId: number, state: TrialCardState) {
     if (state !== "current") return;
     setEncounterStopId(stopId);
   }
@@ -44,62 +50,54 @@ export function ConvocationMap() {
   const encounterStop = CONVOCATION_STOPS.find((stop) => stop.id === encounterStopId) ?? null;
 
   return (
-    <SceneBackground scene={TUTORIAL_ZONE_BACKGROUND} className="h-full w-full">
-      <div className="absolute inset-x-2 top-2 z-10 flex items-center justify-between rounded bg-black/50 px-2 py-1 font-mono text-sm text-white">
-        <span>
-          {progress.completedThrough} / {CONVOCATION_STOPS.length} stops complete ·{" "}
-          {progress.totalXp} XP banked
-        </span>
-        <button
-          type="button"
-          className="rounded border border-white/30 px-2 py-1"
-          onClick={() => resetConvocationProgress()}
-        >
-          Reset progress
-        </button>
-      </div>
+    <div className="font-early-gameboy relative isolate h-full w-full overflow-hidden bg-black text-white">
+      <BackgroundVideo />
+      <div className="bottom-blur-mask fixed inset-0 z-[1] pointer-events-none" aria-hidden="true" />
+      <div className="fixed inset-0 z-[2] bg-black/35" aria-hidden="true" />
 
-      {CONVOCATION_STOPS.map((stop) => {
-          const state = stopState(stop.id, progress.completedThrough);
-          const badgeSrc =
-            state === "completed"
-              ? "/assets/convocation/markers/badge-complete.png"
-              : "/assets/convocation/markers/badge-locked.png";
-          const numSrc =
-            state === "locked"
-              ? `/assets/convocation/markers/num0${stop.id}-gray.png`
-              : `/assets/convocation/markers/num0${stop.id}.png`;
+      <div className="relative z-10 flex h-full flex-col overflow-y-auto px-4 py-5 sm:px-8 sm:py-7 lg:px-12 lg:py-9">
+        <header className="flex shrink-0 items-start justify-between gap-4">
+          <div>
+            <p className="text-[9px] tracking-[0.25em] text-[#d6b5e8] uppercase">
+              The Convocation
+            </p>
+            <h1 className="font-grape-soda mt-2 text-4xl leading-none text-[#fff6d5] drop-shadow-[0_3px_0_#713c91] sm:text-5xl">
+              Trial Path
+            </h1>
+            <p className="mt-3 text-[9px] tracking-[0.12em] text-zinc-300 uppercase">
+              {progress.completedThrough} / {CONVOCATION_STOPS.length} complete · {progress.totalXp} XP banked
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded-full border border-white/25 bg-black/30 px-3 py-2 text-[8px] tracking-[0.12em] text-zinc-300 uppercase backdrop-blur transition hover:border-white/50 hover:text-white"
+            onClick={() => resetConvocationProgress()}
+          >
+            Reset
+          </button>
+        </header>
 
-          return (
-            <button
-              key={stop.id}
-              type="button"
-              aria-label={`${stop.label} (${state})`}
-              title={`${stop.label} (${state})`}
-              disabled={state === "locked"}
-              onClick={() => handleStopClick(stop.id, state)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 disabled:cursor-not-allowed"
-              style={{ left: `${stop.position.xPercent}%`, top: `${stop.position.yPercent}%` }}
-            >
-              <span
-                className={`relative block h-11 w-11 ${
-                  state === "locked" ? "opacity-40 grayscale" : ""
-                }`}
-              >
-                <Image src={badgeSrc} alt="" fill sizes="44px" className="object-contain" />
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <Image
-                    src={numSrc}
-                    alt={stop.label}
-                    width={16}
-                    height={22}
-                    className="h-[22px] w-4 object-contain"
+        <div className="mt-8 min-h-0 flex-1 overflow-y-auto sm:mt-10 sm:flex sm:items-center sm:overflow-x-auto sm:overflow-y-hidden sm:pb-5">
+          <ol className="mx-auto flex w-full max-w-xl flex-col gap-4 sm:mx-0 sm:w-max sm:max-w-none sm:flex-row">
+            {CONVOCATION_STOPS.map((stop) => {
+              const state = stopState(stop.id, progress.completedThrough);
+
+              return (
+                <li
+                  key={stop.id}
+                  className="w-full sm:w-52 sm:shrink-0 lg:w-56"
+                >
+                  <ConvocationTrialCard
+                    stop={stop}
+                    state={state}
+                    onEnter={() => handleStopClick(stop.id, state)}
                   />
-                </span>
-              </span>
-            </button>
-          );
-        })}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </div>
 
       {encounterStop && (
         <ConvocationEncounter
@@ -112,6 +110,6 @@ export function ConvocationMap() {
       {progress.completedThrough >= CONVOCATION_STOPS.length && !encounterStop && (
         <ConvocationClassChoice totalXp={progress.totalXp} />
       )}
-    </SceneBackground>
+    </div>
   );
 }
