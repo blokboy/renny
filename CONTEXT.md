@@ -67,3 +67,29 @@ decisions; each glossary entry below points at the ADR that resolved it.
 - **Calibration check** — a simulated (not live-played) onboarding funnel proving the curve +
   bonuses land a character at Level 10 by the time the onboarding funnel would end. See
   `src/lib/xp/calibration.ts` and `/debug/xp`.
+
+## Status Effects & Wards (issue #7, ADR 0006)
+
+- **Status effect** — `StatusEffectInstance` (`src/lib/combat/types.ts`): Sleep/Silence/
+  Confusion/Poison, each a fixed, flat-duration turn count (never scaled by tier/boss level).
+  Mana Burn is deliberately *not* one of these — it's an instant, one-time mana drain, not a
+  duration effect at all (`applyManaBurn`, `src/lib/combat/statusEffects.ts`).
+- **Poison severity** — the one status effect that doesn't stay flat: compounds ×1.1 per turn
+  it isn't cleansed (`tickStatusEffects`), resetting entirely on cleanse. See
+  `docs/adr/0006-status-effects-wards.md` for the exact formula and how it optionally degrades
+  text (`degradeTextWithPoison`).
+- **Cleanse primitive** — `cleanseStatusEffect(effects, type)`
+  (`src/lib/combat/statusEffects.ts`): removes every instance of one effect type. Issue #8's
+  skill-tree cleanse triggers (§5.2's Cleric/Poison, Bard/Confusion, Wizard/Silence,
+  Rogue/Mana Burn, Hunter/Sleep table) are expected to call this directly once that issue
+  wires them up — not built here.
+- **Ward** — each class's anti-injection spell *mechanic* (`src/lib/combat/wards.ts`),
+  distinct from `classes.ts`'s `ward` field (name/description only, issue #3). All 7 build on
+  one shared, explicitly-provisional injection-detection heuristic
+  (`detectSuspiciousSegments`) but differ in behavior — e.g. Knight's Shield Wall is
+  persistent stance state rather than a one-shot cast, Monk's Empty Mind takes no detector
+  pass at all and discards everything but the literal puzzle statement.
+- **Monk crit-cleanse hook** — "Monk crit while casting Empty Mind removes a random status
+  effect from the whole party" (§5.2) is a standing Ward-triggered hook, *not* a skill-tree
+  node — `cleansePartyRandomStatusEffect` (`src/lib/combat/wards.ts`) implements the effect;
+  detecting the trigger itself belongs to a future combat loop.
