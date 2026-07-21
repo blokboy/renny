@@ -16,3 +16,19 @@ decisions; each glossary entry below points at the ADR that resolved it.
   the Town Hub share this one convention rather than each defining their own.
 - **Tileset** — a small, fixed-size (32px) flat-color tile registry (`TileType`) for simple
   ground/collision maps, rendered via `TileGrid`.
+
+## Character Creation (issue #3, ADR 0002)
+
+- **Character record** — the persisted result of Character Creation: name, class, sprite
+  config, starting stats, starting HP/mana. Saved via `saveCharacter`/`getCharacter`
+  (`src/lib/character/storage.ts`), currently backed by `localStorage` — no database exists
+  yet. See `docs/adr/0002-character-creation.md`.
+- **Starting stats/mana** — provisional placeholders (`src/lib/character/starting-stats.ts`),
+  pending issue #5 (Stats & Mana Economy). Not final numbers; isolated in one file so #5 can
+  replace them wholesale.
+- **Spell cost model** — a named skill is either `free` or a multiplier on the *baseline*
+  mana cost (10% of max mana, per `prompt-quest-full-spec.md` §5.1). See
+  `src/lib/character/mana.ts`.
+- **Ward** — each class's unique anti-injection spell (name/flavor only here; mechanics
+  belong to issue #7, still open). Shown on the class picker alongside the Lv1/25/50/75/100
+  spell list.
