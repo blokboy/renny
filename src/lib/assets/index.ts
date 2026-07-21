@@ -8,5 +8,6 @@
  */
 export * from "./types";
 export * from "./sprite-presets";
+export * from "./enemy-presets";
 export * from "./backgrounds";
 export * from "./tiles";

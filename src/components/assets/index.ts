@@ -1,5 +1,7 @@
 export { CharacterSprite } from "./CharacterSprite";
 export type { CharacterSpriteProps } from "./CharacterSprite";
+export { EnemySprite } from "./EnemySprite";
+export type { EnemySpriteProps } from "./EnemySprite";
 export { PresetPicker } from "./PresetPicker";
 export type { PresetPickerProps } from "./PresetPicker";
 export { SceneBackground } from "./SceneBackground";

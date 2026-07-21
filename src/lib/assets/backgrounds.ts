@@ -44,8 +44,34 @@ export const TOWN_HUB_PLACEHOLDER_BACKGROUND: BackgroundScene = {
   ],
 };
 
+/**
+ * Builds one Convocation battleground scene (issue #10's trial staging).
+ * Each pack ships a single flattened composite image with no sky/ground/
+ * decoration separation, so these are single-layer scenes under the `ground`
+ * kind rather than a true multi-layer parallax stack — the layer convention
+ * still applies, there's just one layer in it. Copied from the raw craftpix
+ * pack (`public/assets/backgrounds/battlegrounds/PNG/*`) into the asset
+ * system's own convention path, same as `TUTORIAL_ZONE_BACKGROUND` was.
+ */
+function battlegroundScene(id: string, label: string): BackgroundScene {
+  return {
+    id,
+    label: `${label} (Convocation battleground)`,
+    layers: [{ id: "backdrop", kind: "ground", src: `/assets/backgrounds/battlegrounds/${id}/ground.png` }],
+  };
+}
+
+export const DEAD_FOREST_BACKGROUND = battlegroundScene("dead-forest", "Dead Forest");
+export const CASTLE_BACKGROUND = battlegroundScene("castle", "Castle");
+export const TERRACE_BACKGROUND = battlegroundScene("terrace", "Terrace");
+export const THRONE_ROOM_BACKGROUND = battlegroundScene("throne-room", "Throne Room");
+
 /** All named scene presets, keyed by id, for lookup/registration by consumers. */
 export const BACKGROUND_SCENES: Record<string, BackgroundScene> = {
   [TUTORIAL_ZONE_BACKGROUND.id]: TUTORIAL_ZONE_BACKGROUND,
   [TOWN_HUB_PLACEHOLDER_BACKGROUND.id]: TOWN_HUB_PLACEHOLDER_BACKGROUND,
+  [DEAD_FOREST_BACKGROUND.id]: DEAD_FOREST_BACKGROUND,
+  [CASTLE_BACKGROUND.id]: CASTLE_BACKGROUND,
+  [TERRACE_BACKGROUND.id]: TERRACE_BACKGROUND,
+  [THRONE_ROOM_BACKGROUND.id]: THRONE_ROOM_BACKGROUND,
 };

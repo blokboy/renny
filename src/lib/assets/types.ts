@@ -28,6 +28,22 @@ export interface CharacterSpriteConfig {
   presetId: string;
 }
 
+/**
+ * One playable enemy's sprite: a static idle look plus an ordered walking
+ * frame-cycle. Distinct from `SpritePreset` (a single flat image) because
+ * enemies need to animate a walk-in entrance the way the player's Wraith
+ * already does on the loading screen — `idleImageSrc` covers the flat-image
+ * case, `walkingFrameSrcs` covers the animated one.
+ */
+export interface EnemySpritePreset {
+  id: string;
+  label: string;
+  idleImageSrc: string;
+  walkingFrameSrcs: string[];
+  imageWidth: number;
+  imageHeight: number;
+}
+
 /** The three layer kinds in the shared background/scene convention. */
 export type BackgroundLayerKind = "sky" | "ground" | "decoration";
 
