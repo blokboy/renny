@@ -3,9 +3,12 @@ const STORAGE_KEY = "convocation-progress";
 export interface ConvocationProgress {
   /** Highest stop id the player has completed. 0 = none completed yet. */
   completedThrough: number;
+  /** XP banked by the fixed Convocation encounters before class selection exists. */
+  totalXp: number;
+  xpByStop: Record<number, number>;
 }
 
-const INITIAL_PROGRESS: ConvocationProgress = { completedThrough: 0 };
+const INITIAL_PROGRESS: ConvocationProgress = { completedThrough: 0, totalXp: 0, xpByStop: {} };
 
 // Cached by raw string so `getSnapshot` returns a stable reference when
 // storage hasn't actually changed, as useSyncExternalStore requires.
@@ -23,7 +26,12 @@ function readSnapshot(): ConvocationProgress {
   }
 
   try {
-    cachedSnapshot = JSON.parse(raw) as ConvocationProgress;
+    const parsed = JSON.parse(raw) as Partial<ConvocationProgress>;
+    cachedSnapshot = {
+      completedThrough: parsed.completedThrough ?? 0,
+      totalXp: parsed.totalXp ?? 0,
+      xpByStop: parsed.xpByStop ?? {},
+    };
   } catch {
     cachedSnapshot = INITIAL_PROGRESS;
   }
@@ -58,10 +66,17 @@ export function getConvocationProgressServerSnapshot(): ConvocationProgress {
   return INITIAL_PROGRESS;
 }
 
-export function completeStop(stopId: number): ConvocationProgress {
+export function completeStop(stopId: number, xpGained = 0): ConvocationProgress {
   const current = readSnapshot();
+  const wasAlreadyComplete = stopId <= current.completedThrough;
+  const nextXpByStop = { ...current.xpByStop };
+  if (!wasAlreadyComplete) {
+    nextXpByStop[stopId] = xpGained;
+  }
   const next: ConvocationProgress = {
     completedThrough: Math.max(current.completedThrough, stopId),
+    totalXp: wasAlreadyComplete ? current.totalXp : current.totalXp + xpGained,
+    xpByStop: nextXpByStop,
   };
   writeSnapshot(next);
   return next;

@@ -6,6 +6,7 @@
  */
 export * from "./types";
 export * from "./classes";
+export * from "./skill-trees";
 export * from "./starting-stats";
 export * from "./mana";
 export * from "./tokens";
