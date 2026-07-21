@@ -1,19 +1,12 @@
 import type { CharacterStats, ClassId } from "./types";
 
 /**
- * PROVISIONAL PLACEHOLDER — pending issue #5 (Stats & Mana Economy).
- *
- * Issue #5, which owns the real stat/point-buy system and mana pool sizing,
- * is not implemented yet, and Character Creation (#3) is one of its two
- * blockers. Rather than block on #5 or invent a full mechanical system here,
- * these are hand-picked starting values (on a rough 1-20 scale) chosen only
- * to thematically differentiate the 7 classes on the character-creation stat
- * bars, per the same precedent issue #4 set for its own undocumented
- * hit/miss/fail thresholds: isolate the guess in one clearly-documented file
- * rather than scattering it or guessing silently.
- *
- * Do not depend on these numbers being final — #5 will very likely replace
- * this whole file with a real point-buy/stat-growth system.
+ * Per-class Level-1 stats (`prompt-quest-full-spec.md` §5.3), on a rough
+ * 1-20 scale. These values shipped as issue #3's placeholder (chosen only to
+ * thematically differentiate the 7 classes on the creation screen's stat
+ * bars) and are kept as-is here — issue #5 owns finalizing them, and no
+ * rebalance is called for; what #5 adds is the growth curve below, plus the
+ * mechanics each stat now actually drives. See docs/adr/0003-stats-mana-economy.md.
  */
 export const STARTING_STATS: Record<ClassId, CharacterStats> = {
   // Speed is a stat — highest SPD in the roster, LCK to match its crit/probe kit.
@@ -40,11 +33,54 @@ export const STARTING_STATS: Record<ClassId, CharacterStats> = {
 };
 
 /**
- * PROVISIONAL PLACEHOLDER — pending issue #5. Simple formulas that turn a
- * class's placeholder STR/WIS into a starting HP/mana pool, chosen only so
- * the numbers move in a class-appropriate direction (e.g. Knight tanky,
- * Wizard squishy-but-mana-hungry... except also mana-starved, per its own
- * flavor). Real numbers belong entirely to #5.
+ * Per-level stat growth (issue #5). Not specified numerically by the design
+ * docs (§9 calls exact numeric tuning an open item) — this mirrors each
+ * class's `STARTING_STATS` emphasis (its highest starting stats grow
+ * fastest) rather than inventing an unrelated curve, isolated here per the
+ * same documented-placeholder precedent ADR 0002/0001 established. See
+ * docs/adr/0003-stats-mana-economy.md for the full rationale.
+ */
+export const STAT_GROWTH_PER_LEVEL: Record<ClassId, CharacterStats> = {
+  rogue: { str: 0.2, int: 0.2, wis: 0.2, spd: 0.6, lck: 0.5 },
+  knight: { str: 0.5, int: 0.3, wis: 0.5, spd: 0.2, lck: 0.15 },
+  wizard: { str: 0.15, int: 0.6, wis: 0.2, spd: 0.15, lck: 0.2 },
+  bard: { str: 0.25, int: 0.3, wis: 0.3, spd: 0.3, lck: 0.5 },
+  cleric: { str: 0.2, int: 0.45, wis: 0.55, spd: 0.2, lck: 0.2 },
+  hunter: { str: 0.3, int: 0.4, wis: 0.3, spd: 0.35, lck: 0.25 },
+  monk: { str: 0.25, int: 0.15, wis: 0.15, spd: 0.45, lck: 0.5 },
+};
+
+/**
+ * Pure function of (class, level) rather than an incremental mutator —
+ * deliberately so. `STAT_GROWTH_PER_LEVEL` is fractional, and rounding a
+ * fractional increment on every single level-up (e.g. 0.2/level, called
+ * once per level as XP/leveling (#9) advances level-by-level) would lose
+ * or double-count fractions depending on call cadence. Recomputing from
+ * `STARTING_STATS` and rounding once avoids that drift entirely, and lets
+ * issue #9's leveling engine just call `getStatsAtLevel(classId, newLevel)`
+ * and re-save the result — no separate accumulator to keep in sync.
+ */
+export function getStatsAtLevel(classId: ClassId, level: number): CharacterStats {
+  const base = STARTING_STATS[classId];
+  const growth = STAT_GROWTH_PER_LEVEL[classId];
+  const levelsGained = Math.max(0, level - 1);
+
+  return {
+    str: base.str + Math.round(growth.str * levelsGained),
+    int: base.int + Math.round(growth.int * levelsGained),
+    wis: base.wis + Math.round(growth.wis * levelsGained),
+    spd: base.spd + Math.round(growth.spd * levelsGained),
+    lck: base.lck + Math.round(growth.lck * levelsGained),
+  };
+}
+
+/**
+ * HP/mana pool formulas off STR/WIS respectively (`prompt-quest-full-spec.md`
+ * §5.3: WIS governs max mana; STR is the damage stat, HP scaling off it is
+ * this file's own thematic choice, same as issue #3 originally picked).
+ * Takes any `CharacterStats` — not just Level-1 starting stats — so these
+ * same formulas serve a leveled-up character's pools via
+ * `getStatsAtLevel`, without a second set of functions.
  */
 const BASE_HP = 40;
 const HP_PER_STR = 3;

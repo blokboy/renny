@@ -1,9 +1,10 @@
 /**
- * Core types for Renny's Character Creation flow (issue #3).
+ * Core types for Renny's Character Creation flow (issue #3) and Stats &
+ * Mana Economy (issue #5).
  *
- * See docs/adr/0002-character-creation.md for the full contract and for the
- * provisional-placeholder notes on stats/mana (both real systems belong to
- * issue #5, "Stats & Mana Economy", which is not implemented yet).
+ * See docs/adr/0002-character-creation.md for Character Creation's contract
+ * and docs/adr/0003-stats-mana-economy.md for how the 5 stats and mana cost
+ * model are actually mechanized.
  */
 import type { CharacterSpriteConfig } from "@/lib/assets";
 
