@@ -93,3 +93,13 @@ decisions; each glossary entry below points at the ADR that resolved it.
   effect from the whole party" (§5.2) is a standing Ward-triggered hook, *not* a skill-tree
   node — `cleansePartyRandomStatusEffect` (`src/lib/combat/wards.ts`) implements the effect;
   detecting the trigger itself belongs to a future combat loop.
+
+## Threshold Guardian (issue #11, ADR 0008)
+
+- **Guardian encounter** — the first generated battle, represented by a `GuardianEncounter`
+  definition plus pure `GuardianBattleState` transitions in `src/lib/guardian`.
+- **Dependency Lock** — a shield-phase convergence puzzle where an NPC's generated output is
+  embedded into the player's later shard; issue #11 rolls evenly across Multi-hop, Ambiguity,
+  and Reverse-prompt. Interrogation remains owned by issue #12.
+- **Guardian completion** — a browser-persisted victory marker written by
+  `markGuardianComplete`, intended to gate the Town Hub in issue #13.

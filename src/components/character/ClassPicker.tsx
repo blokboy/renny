@@ -80,8 +80,7 @@ export function ClassPicker({ selectedIndex, onSelectIndex }: ClassPickerProps) 
           <StatBar label="SPD" value={stats.spd} />
           <StatBar label="LCK" value={stats.lck} />
           <p className="mt-1 text-xs text-zinc-600">
-            Starting HP {maxHp} · Starting mana {maxMana} (placeholder values — see
-            docs/adr/0002-character-creation.md, pending issue #5)
+            Starting HP {maxHp} · Starting mana {maxMana}
           </p>
         </div>
 
@@ -97,9 +96,7 @@ export function ClassPicker({ selectedIndex, onSelectIndex }: ClassPickerProps) 
               </span>
             </div>
             <p className="mt-1 text-xs text-zinc-400">{classDef.ward.description}</p>
-            <p className="mt-1 text-[11px] text-zinc-600">
-              Counters prompt injection — mechanics land with issue #7 (not yet built).
-            </p>
+            <p className="mt-1 text-[11px] text-zinc-600">Counters prompt injection.</p>
           </div>
         </div>
 

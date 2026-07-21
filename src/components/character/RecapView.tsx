@@ -58,7 +58,7 @@ export function RecapView() {
 
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
         <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-          Starting stats
+          Current stats
         </p>
         <div className="mt-3 flex flex-col gap-2">
           <StatBar label="STR" value={record.stats.str} />
@@ -68,7 +68,7 @@ export function RecapView() {
           <StatBar label="LCK" value={record.stats.lck} />
         </div>
         <p className="mt-3 text-sm text-zinc-400">
-          Starting HP <span className="text-white">{record.startingHp}</span> · Starting mana{" "}
+          HP <span className="text-white">{record.startingHp}</span> · Mana{" "}
           <span className="text-white">{record.startingMana}</span>
         </p>
       </div>
@@ -81,12 +81,12 @@ export function RecapView() {
           &rsquo;s {classDef.familiar.split(" — ")[0].replace(/^Bound to /i, "")}.
         </p>
         <p className="mt-2 text-xs text-zinc-500">
-          (Placeholder recap copy — the Convocation&rsquo;s real puzzle-to-class callback lands
-          with issue #10, not yet built.)
+          The shrine&rsquo;s last gate is waiting. Your class&rsquo;s diagnostic family will shape the
+          opening exchange.
         </p>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => {
@@ -96,6 +96,13 @@ export function RecapView() {
           className="rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-500"
         >
           Start over
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("/guardian")}
+          className="rounded bg-emerald-400 px-5 py-2 text-sm font-bold text-zinc-950 transition hover:bg-emerald-300"
+        >
+          Face the Threshold Guardian
         </button>
       </div>
     </div>

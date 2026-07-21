@@ -13,6 +13,7 @@ import {
   subscribeToConvocationProgress,
 } from "@/lib/convocation/progress";
 import { ConvocationEncounter } from "./ConvocationEncounter";
+import { ConvocationClassChoice } from "./ConvocationClassChoice";
 
 type StopState = "completed" | "current" | "locked";
 
@@ -106,6 +107,10 @@ export function ConvocationMap() {
           onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
           onClose={() => setEncounterStopId(null)}
         />
+      )}
+
+      {progress.completedThrough >= CONVOCATION_STOPS.length && !encounterStop && (
+        <ConvocationClassChoice totalXp={progress.totalXp} />
       )}
     </SceneBackground>
   );
