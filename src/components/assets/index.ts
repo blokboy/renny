@@ -1,9 +1,7 @@
 export { CharacterSprite } from "./CharacterSprite";
 export type { CharacterSpriteProps } from "./CharacterSprite";
-export { SwatchPicker } from "./SwatchPicker";
-export type { SwatchPickerProps } from "./SwatchPicker";
-export { VariantPicker } from "./VariantPicker";
-export type { VariantPickerProps } from "./VariantPicker";
+export { PresetPicker } from "./PresetPicker";
+export type { PresetPickerProps } from "./PresetPicker";
 export { SceneBackground } from "./SceneBackground";
 export type { SceneBackgroundProps } from "./SceneBackground";
 export { TileGrid } from "./TileGrid";

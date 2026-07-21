@@ -3,7 +3,7 @@ import { CreationWizard } from "@/components/character";
 
 export const metadata: Metadata = {
   title: "Create your hero — Prompt Quest",
-  description: "Choose your look, name your hero, and pick a class.",
+  description: "Name your hero and choose your look.",
 };
 
 export default function CharacterCreatePage() {
@@ -13,7 +13,7 @@ export default function CharacterCreatePage() {
         <header className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold text-white">Character Creation</h1>
           <p className="text-zinc-400">
-            Choose your look, name your hero, and pick one of the 7 classes.
+            Name your hero and choose your look. You&apos;ll pick a class later.
           </p>
         </header>
         <CreationWizard />

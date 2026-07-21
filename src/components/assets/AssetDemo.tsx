@@ -2,28 +2,19 @@
 
 import { useState } from "react";
 import {
-  BODY_VARIANTS,
   DEMO_TILE_MAP,
-  HAIR_COLORS,
-  HAIR_VARIANTS,
-  HEAD_VARIANTS,
-  SKIN_TONES,
+  SPRITE_PRESETS,
   TOWN_HUB_PLACEHOLDER_BACKGROUND,
   TUTORIAL_ZONE_BACKGROUND,
 } from "@/lib/assets";
 import type { CharacterSpriteConfig } from "@/lib/assets";
 import { CharacterSprite } from "@/components/assets/CharacterSprite";
-import { SwatchPicker } from "@/components/assets/SwatchPicker";
-import { VariantPicker } from "@/components/assets/VariantPicker";
+import { PresetPicker } from "@/components/assets/PresetPicker";
 import { SceneBackground } from "@/components/assets/SceneBackground";
 import { TileGrid } from "@/components/assets/TileGrid";
 
 const DEFAULT_CONFIG: CharacterSpriteConfig = {
-  bodyVariantId: BODY_VARIANTS[0].id,
-  headVariantId: HEAD_VARIANTS[0].id,
-  hairVariantId: HAIR_VARIANTS[0].id,
-  skinToneId: SKIN_TONES[0].id,
-  hairColorId: HAIR_COLORS[0].id,
+  presetId: SPRITE_PRESETS[0].id,
 };
 
 /**
@@ -36,49 +27,20 @@ const DEFAULT_CONFIG: CharacterSpriteConfig = {
 export function AssetDemo() {
   const [config, setConfig] = useState<CharacterSpriteConfig>(DEFAULT_CONFIG);
 
-  function set<K extends keyof CharacterSpriteConfig>(key: K, value: CharacterSpriteConfig[K]) {
-    setConfig((previous) => ({ ...previous, [key]: value }));
-  }
-
   return (
     <div className="flex flex-col gap-16">
       <section className="flex flex-col gap-6">
-        <h2 className="text-xl font-semibold text-white">Character sprite composer</h2>
+        <h2 className="text-xl font-semibold text-white">Character sprite presets</h2>
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
           <div className="flex items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 p-6">
             <CharacterSprite config={config} size={160} />
           </div>
-          <div className="grid flex-1 grid-cols-1 gap-6 sm:grid-cols-2">
-            <VariantPicker
-              label="Body"
-              variants={BODY_VARIANTS}
-              selectedId={config.bodyVariantId}
-              onSelect={(id) => set("bodyVariantId", id)}
-            />
-            <VariantPicker
-              label="Head"
-              variants={HEAD_VARIANTS}
-              selectedId={config.headVariantId}
-              onSelect={(id) => set("headVariantId", id)}
-            />
-            <VariantPicker
-              label="Hair style"
-              variants={HAIR_VARIANTS}
-              selectedId={config.hairVariantId}
-              onSelect={(id) => set("hairVariantId", id)}
-            />
-            <div aria-hidden className="hidden sm:block" />
-            <SwatchPicker
-              label="Skin tone"
-              swatches={SKIN_TONES}
-              selectedId={config.skinToneId}
-              onSelect={(id) => set("skinToneId", id)}
-            />
-            <SwatchPicker
-              label="Hair color"
-              swatches={HAIR_COLORS}
-              selectedId={config.hairColorId}
-              onSelect={(id) => set("hairColorId", id)}
+          <div className="flex-1">
+            <PresetPicker
+              label="Look"
+              presets={SPRITE_PRESETS}
+              selectedId={config.presetId}
+              onSelect={(id) => setConfig({ presetId: id })}
             />
           </div>
         </div>

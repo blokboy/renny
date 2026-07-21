@@ -1,4 +1,4 @@
-import type { ClassId, CharacterStats } from "@/lib/character";
+import type { ClassId } from "@/lib/character";
 import { getCumulativeXpToLevel } from "./curve";
 import { getXpMultiplier } from "./bonuses";
 import { applyXpGain, type LevelState } from "./leveling";
@@ -71,12 +71,8 @@ export interface CalibrationResult {
   steps: CalibrationCastStep[];
 }
 
-/** Placeholder starting stats — arbitrary since this check only cares about level/XP convergence. */
-const PLACEHOLDER_STATS: CharacterStats = { str: 10, int: 10, wis: 10, spd: 10, lck: 10 };
-
 export function runCalibration(classId: ClassId = "wizard"): CalibrationResult {
   let state: LevelState = { level: 1, xp: 0 };
-  let stats = PLACEHOLDER_STATS;
   let totalXpGained = 0;
   const steps: CalibrationCastStep[] = [];
 
@@ -86,9 +82,8 @@ export function runCalibration(classId: ClassId = "wizard"): CalibrationResult {
     );
     totalXpGained += xpGained;
 
-    const result = applyXpGain(state, xpGained, classId, stats);
+    const result = applyXpGain(state, xpGained, classId);
     state = result.state;
-    stats = result.stats;
 
     steps.push({
       index: i + 1,

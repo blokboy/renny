@@ -24,6 +24,12 @@
 .DS_Store
 *.pem
 
+# design-source binaries: not servable, not needed at runtime, and Tailwind's
+# automatic class scanner chokes on raw bytes in these formats
+*.psd
+*.ai
+*.eps
+
 # debug
 npm-debug.log*
 yarn-debug.log*

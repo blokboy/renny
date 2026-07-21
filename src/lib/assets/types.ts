@@ -5,36 +5,18 @@
  * offers to consumers (Character Creation, the Convocation, the Town Hub).
  */
 
-/** A single flat-shape primitive used to build a placeholder sprite layer. */
-export type ShapeSpec =
-  | { kind: "rect"; x: number; y: number; width: number; height: number; rx?: number }
-  | { kind: "circle"; cx: number; cy: number; r: number }
-  | { kind: "ellipse"; cx: number; cy: number; rx: number; ry: number }
-  | { kind: "polygon"; points: string };
-
 /**
- * One selectable option for a sprite layer (e.g. one hair style, one body
- * shape). `shapes` are composed together and tinted by whichever swatch
- * applies to that layer (skin tone for body/head, hair color for hair).
- *
- * This is the extension point for real art later: a variant can grow an
- * optional `imageSrc` (mirroring `BackgroundLayer` below) without changing
- * the public `CharacterSprite` component contract.
+ * One selectable whole-character look, pre-composited by an artist (not a
+ * composable body/head/hair layer stack — see docs/adr/0005 for why: this
+ * pack has no per-part offset data to safely re-layer with, so a preset is
+ * one flat image).
  */
-export interface SpriteVariant {
+export interface SpritePreset {
   id: string;
   label: string;
-  shapes: ShapeSpec[];
-}
-
-/** The three composable layers of a Renny character sprite, bottom to top. */
-export type SpriteLayerName = "body" | "head" | "hair";
-
-/** A named, reusable color swatch (skin tone or hair color). */
-export interface Swatch {
-  id: string;
-  label: string;
-  hex: string;
+  imageSrc: string;
+  imageWidth: number;
+  imageHeight: number;
 }
 
 /**
@@ -43,11 +25,7 @@ export interface Swatch {
  * Creation should persist this shape as-is alongside name/class.
  */
 export interface CharacterSpriteConfig {
-  bodyVariantId: string;
-  headVariantId: string;
-  hairVariantId: string;
-  skinToneId: string;
-  hairColorId: string;
+  presetId: string;
 }
 
 /** The three layer kinds in the shared background/scene convention. */
