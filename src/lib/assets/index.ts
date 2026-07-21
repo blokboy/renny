@@ -7,7 +7,6 @@
  * contract and usage guidance.
  */
 export * from "./types";
-export * from "./swatches";
-export * from "./sprite-variants";
+export * from "./sprite-presets";
 export * from "./backgrounds";
 export * from "./tiles";

@@ -1,7 +1,7 @@
 export { StatBar } from "./StatBar";
 export type { StatBarProps } from "./StatBar";
-export { NameEntryGrid, NAME_MAX_LENGTH } from "./NameEntryGrid";
-export type { NameEntryGridProps } from "./NameEntryGrid";
+export { NameInput, NAME_MAX_LENGTH } from "./NameInput";
+export type { NameInputProps } from "./NameInput";
 export { SpriteCustomizer } from "./SpriteCustomizer";
 export type { SpriteCustomizerProps } from "./SpriteCustomizer";
 export { ClassPicker } from "./ClassPicker";

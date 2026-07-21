@@ -66,18 +66,27 @@ export interface ClassDefinition {
 }
 
 /**
- * The persisted result of Character Creation: everything needed to hand a
- * freshly-created hero off to the rest of the game. `startingHp`/
- * `startingMana` are the character's full pools at creation time (the
- * character starts at full health/mana, so no separate "current" value is
- * needed yet).
+ * The result of the name+appearance portion of Character Creation. Class
+ * selection is deferred to just before the Threshold Guardian (see the
+ * Convocation/Threshold Guardian issues) rather than happening up front, so
+ * a draft is all Character Creation itself produces.
  */
-export interface CharacterRecord {
+export interface CharacterDraft {
   name: string;
-  classId: ClassId;
   sprite: CharacterSpriteConfig;
+  createdAt: string;
+}
+
+/**
+ * The persisted result of class selection: a `CharacterDraft` plus
+ * everything needed to hand a freshly-classed hero off to the rest of the
+ * game. `startingHp`/`startingMana` are the character's full pools at
+ * creation time (the character starts at full health/mana, so no separate
+ * "current" value is needed yet).
+ */
+export interface CharacterRecord extends CharacterDraft {
+  classId: ClassId;
   stats: CharacterStats;
   startingHp: number;
   startingMana: number;
-  createdAt: string;
 }
