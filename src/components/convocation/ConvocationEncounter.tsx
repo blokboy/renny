@@ -69,7 +69,7 @@ function FamilyPill({ family, probeReveal }: FamilyPillProps) {
       ref={ref}
       onMouseEnter={showTooltip}
       onMouseLeave={() => setTooltipPos(null)}
-      className="rounded-full border border-emerald-300/40 bg-emerald-950/30 px-2.5 py-0.5 text-[9px] tracking-wide text-emerald-200 uppercase"
+      className="shrink-0 whitespace-nowrap rounded-full border border-emerald-300/40 bg-emerald-950/30 px-2.5 py-0.5 text-[9px] tracking-wide text-emerald-200 uppercase"
     >
       {family}
       {tooltipPos &&
@@ -216,27 +216,27 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved }: 
           aria-labelledby="convocation-encounter-title"
           className="liquid-glass encounter-glass animate-blur-fade-up grid max-h-[40vh] w-full max-w-2xl grid-rows-[auto_1fr] overflow-hidden rounded-xl font-mono text-sm text-white"
         >
-          <header className="flex items-start justify-between gap-2 border-b border-white/15 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <h2 id="convocation-encounter-title" className="text-sm font-bold sm:text-lg">
-                  {stop.puzzle.title}
-                </h2>
-                <FamilyPill family={stop.family} probeReveal={stop.probeReveal} />
-                <span className="rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[9px] tracking-wide text-white/70 uppercase">
-                  {stop.preview}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-white/55">{stop.hint} One prompt. One cast.</p>
+          <header className="border-b border-white/15 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="flex items-start justify-between gap-2">
+              <h2 id="convocation-encounter-title" className="text-sm font-bold sm:text-lg">
+                {stop.puzzle.title}
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="shrink-0 rounded-full border border-white/20 px-2.5 py-0.5 text-[9px] tracking-wide uppercase hover:bg-white/10 disabled:opacity-40"
+              >
+                Exit
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="shrink-0 rounded-full border border-white/20 px-2 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40 sm:px-3 sm:py-2"
-            >
-              Exit
-            </button>
+            <div className="mx-[-0.75rem] mt-2 flex w-[calc(100%+1.5rem)] items-center gap-1.5 overflow-x-auto border-y border-white/10 bg-black/15 px-3 py-1.5 sm:mx-[-1rem] sm:w-[calc(100%+2rem)] sm:gap-2 sm:px-4">
+              <FamilyPill family={stop.family} probeReveal={stop.probeReveal} />
+              <span className="shrink-0 whitespace-nowrap rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[9px] tracking-wide text-white/70 uppercase">
+                {stop.preview}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-white/55">{stop.hint} One prompt. One cast.</p>
           </header>
 
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-3 sm:p-4">
