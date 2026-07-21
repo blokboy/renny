@@ -49,3 +49,19 @@ decisions; each glossary entry below points at the ADR that resolved it.
   a different, unrelated mechanic that happens to share the word "crit."
 - **Turn order (SPD)** — `getTurnOrder` (`src/lib/combat/turnOrder.ts`): a stable sort by SPD,
   descending. No multi-actor battle loop exists yet to consume it.
+## XP & Leveling (issue #9, ADR 0004)
+
+- **XP curve** — `XP_to_next(level) = round(50 × level^1.5)` (`src/lib/xp/curve.ts`). Not a
+  placeholder; the base constant is the spec's own number.
+- **Economy/Elegance bonus** — two continuous, additively-stacking XP multipliers (each
+  capped at +50%): Economy rewards staying under a puzzle's expected token budget, Elegance
+  scales off the Judge's continuous 0-1 elegance score. See `src/lib/xp/bonuses.ts` and
+  `docs/adr/0004-xp-leveling.md`.
+- **Elegance score** — the Judge's continuous 0-1 read on how minimal/precise the *player's
+  prompt* was (superseding the earlier `elegant` boolean). `JudgeResult.elegance`.
+- **Stat-growth seam** — `applyLevelUp` (`src/lib/xp/leveling.ts`) is the level-up hook this
+  issue calls into; the real per-class growth table is issue #5's, wired in as a same-shape
+  swap once both land.
+- **Calibration check** — a simulated (not live-played) onboarding funnel proving the curve +
+  bonuses land a character at Level 10 by the time the onboarding funnel would end. See
+  `src/lib/xp/calibration.ts` and `/debug/xp`.

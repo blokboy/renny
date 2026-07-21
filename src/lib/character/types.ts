@@ -80,5 +80,8 @@ export interface CharacterRecord {
   stats: CharacterStats;
   startingHp: number;
   startingMana: number;
+  /** Starts at 1/0 on creation. See `@/lib/xp` (issue #9) for the XP curve and level-up logic. */
+  level: number;
+  xp: number;
   createdAt: string;
 }
