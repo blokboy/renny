@@ -29,17 +29,20 @@ export interface CharacterSpriteConfig {
 }
 
 /**
- * One playable enemy's sprite: a static idle look plus an ordered walking
- * frame-cycle. Distinct from `SpritePreset` (a single flat image) because
- * enemies need to animate a walk-in entrance the way the player's Wraith
- * already does on the loading screen — `idleImageSrc` covers the flat-image
- * case, `walkingFrameSrcs` covers the animated one.
+ * One playable enemy's sprite: a static idle look plus ordered walking,
+ * hurt, and dying frame-cycles. Distinct from `SpritePreset` (a single flat
+ * image) because enemies need to animate a walk-in entrance the way the
+ * player's Wraith already does on the loading screen, and (issue: combat
+ * resolution) a hit/hurt/death reaction — `idleImageSrc` covers the
+ * flat-image case, the frame-cycle arrays cover the animated ones.
  */
 export interface EnemySpritePreset {
   id: string;
   label: string;
   idleImageSrc: string;
   walkingFrameSrcs: string[];
+  hurtFrameSrcs: string[];
+  dyingFrameSrcs: string[];
   imageWidth: number;
   imageHeight: number;
 }

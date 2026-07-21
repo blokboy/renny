@@ -4,21 +4,38 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ConvocationStop } from "@/lib/convocation/stops";
 import type { ConvocationCastResponse } from "@/lib/convocation/encounter";
+import type { Outcome } from "@/lib/combat/types";
+import { HUD_FOOTPRINT_PX } from "./ConvocationHud";
 
 interface ConvocationEncounterProps {
   stop: ConvocationStop;
   onComplete: (xpGained: number) => void;
   onClose: () => void;
+  /** Fires the moment the Judge's outcome is known, before the player reads it — drives the sprites' combat reaction (see `ConvocationBattleStage`) and the HUD's health drain. */
+  onResolved?: (outcome: Outcome) => void;
 }
 
-const OUTCOME_COPY: Record<ConvocationCastResponse["resolution"]["outcome"], string> = {
+const OUTCOME_COPY: Record<Outcome, string> = {
   hit: "Hit",
   miss: "Miss",
   fail: "Fail",
 };
 
+const OUTCOME_TONE: Record<Outcome, string> = {
+  hit: "border-emerald-300/60 bg-emerald-950/25 text-emerald-100",
+  miss: "border-amber-300/50 bg-amber-950/25 text-amber-100",
+  fail: "border-red-400/50 bg-red-950/30 text-red-100",
+};
+
 /** Tutorial-phase prompts are capped short — the Convocation is a diagnostic, not a full cast. */
 const WORD_LIMIT = 12;
+
+/** Clearance the puzzle panel keeps from each `ConvocationHud` block. */
+const PANEL_HUD_GAP_PX = 3;
+const PANEL_INSET_STYLE = {
+  "--panel-inset-x": `${HUD_FOOTPRINT_PX.base + PANEL_HUD_GAP_PX}px`,
+  "--panel-inset-x-sm": `${HUD_FOOTPRINT_PX.sm + PANEL_HUD_GAP_PX}px`,
+} as React.CSSProperties;
 
 function countWords(text: string): number {
   const trimmed = text.trim();
@@ -70,7 +87,82 @@ function FamilyPill({ family, probeReveal }: FamilyPillProps) {
   );
 }
 
-export function ConvocationEncounter({ stop, onComplete, onClose }: ConvocationEncounterProps) {
+interface JudgeDialogProps {
+  loading: boolean;
+  error: string | null;
+  result: ConvocationCastResponse | null;
+  onContinue: (xpGained: number) => void;
+}
+
+/**
+ * A second dialog, stacked below the puzzle panel, that owns the cast's
+ * outcome — separate from the panel (which only ever shows the puzzle
+ * itself) so the panel doesn't grow/shrink as a cast resolves. Walks
+ * loading -> error | result; renders nothing before the first cast.
+ */
+function JudgeDialog({ loading, error, result, onContinue }: JudgeDialogProps) {
+  return (
+    <section
+      aria-live="polite"
+      className="liquid-glass encounter-glass animate-blur-fade-up w-full max-w-2xl rounded-xl p-3 font-mono text-sm text-white sm:p-4"
+    >
+      <p className="text-[9px] tracking-[0.25em] text-white/50 uppercase">The Judge</p>
+
+      {loading && (
+        <p className="mt-2 flex items-center gap-2 text-white/75">
+          <span className="flex h-2 w-2 animate-ping rounded-full bg-emerald-300" />
+          Analyzing your cast...
+        </p>
+      )}
+
+      {!loading && error && (
+        <p className="mt-2 rounded border border-red-400/40 bg-red-950/40 p-3 text-red-100">{error}</p>
+      )}
+
+      {!loading && result && (
+        <div className="mt-2 flex flex-col gap-3">
+          <section className={`rounded border p-3 ${OUTCOME_TONE[result.resolution.outcome]}`}>
+            <p className="text-xl font-bold">
+              {OUTCOME_COPY[result.resolution.outcome]}
+              {result.resolution.isCrit ? " · Crit" : ""}
+            </p>
+            <p className="mt-2 opacity-90">{result.judge.feedback}</p>
+            <p className="mt-2 text-[10px] tracking-wide uppercase opacity-70">
+              Score {Math.round(result.judge.score * 100)} · Elegance {Math.round(result.judge.elegance * 100)} ·
+              Damage {result.resolution.damage}
+            </p>
+          </section>
+
+          <section className="rounded border border-white/15 bg-black/35 p-3">
+            <p className="text-xs tracking-wide text-white/50 uppercase">Familiar output</p>
+            <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap text-white/85">
+              {result.familiarOutput}
+            </pre>
+          </section>
+
+          <section className="rounded border border-emerald-300/25 bg-emerald-950/25 p-3">
+            <p className="text-xs tracking-wide text-emerald-200 uppercase">XP</p>
+            <p className="mt-2 text-xl font-bold text-emerald-100">+{result.xp.gained}</p>
+            <p className="text-white/65">
+              {result.xp.actualTokens}/{result.xp.expectedTokens} prompt tokens · Economy{" "}
+              {Math.round(result.xp.economyBonus * 100)}% · Elegance {Math.round(result.xp.eleganceBonus * 100)}%
+            </p>
+          </section>
+
+          <button
+            type="button"
+            onClick={() => onContinue(result.xp.gained)}
+            className="self-start rounded border border-emerald-300/70 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
+          >
+            Continue
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function ConvocationEncounter({ stop, onComplete, onClose, onResolved }: ConvocationEncounterProps) {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +193,7 @@ export function ConvocationEncounter({ stop, onComplete, onClose }: ConvocationE
         throw new Error(data.error ?? "Cast failed");
       }
       setResult(data);
+      onResolved?.(data.resolution.outcome);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Cast failed");
     } finally {
@@ -109,20 +202,24 @@ export function ConvocationEncounter({ stop, onComplete, onClose }: ConvocationE
   }
 
   const wordCount = countWords(prompt);
+  const showJudgeDialog = loading || error !== null || result !== null;
 
   return (
     <>
-      <div className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto p-3 pb-28 sm:pb-32">
+      <div
+        className="fixed inset-0 z-30 flex flex-col items-center justify-start gap-3 overflow-y-auto px-[var(--panel-inset-x)] pt-3 pb-3 sm:px-[var(--panel-inset-x-sm)] sm:pt-6"
+        style={PANEL_INSET_STYLE}
+      >
         <section
           role="dialog"
           aria-modal="true"
           aria-labelledby="convocation-encounter-title"
-          className="liquid-glass encounter-glass animate-blur-fade-up grid max-h-[calc(100vh-160px)] w-full max-w-2xl grid-rows-[auto_1fr] overflow-hidden rounded-xl font-mono text-sm text-white"
+          className="liquid-glass encounter-glass animate-blur-fade-up grid max-h-[40vh] w-full max-w-2xl grid-rows-[auto_1fr] overflow-hidden rounded-xl font-mono text-sm text-white"
         >
-          <header className="flex items-start justify-between gap-3 border-b border-white/15 px-4 py-3">
+          <header className="flex items-start justify-between gap-2 border-b border-white/15 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 id="convocation-encounter-title" className="text-lg font-bold">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h2 id="convocation-encounter-title" className="text-sm font-bold sm:text-lg">
                   {stop.puzzle.title}
                 </h2>
                 <FamilyPill family={stop.family} probeReveal={stop.probeReveal} />
@@ -136,91 +233,48 @@ export function ConvocationEncounter({ stop, onComplete, onClose }: ConvocationE
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="rounded-full border border-white/20 px-3 py-2 text-xs hover:bg-white/10 disabled:opacity-40"
+              className="shrink-0 rounded-full border border-white/20 px-2 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40 sm:px-3 sm:py-2"
             >
               Exit
             </button>
           </header>
 
-          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-4 pb-24">
-            <div className="flex min-h-0 flex-col gap-4">
-              <section className="rounded border border-white/15 bg-black/35 p-4">
-                <p className="text-white/70">{stop.puzzle.flavor}</p>
-                <p className="mt-3 leading-relaxed">{stop.puzzle.brief}</p>
-                {stop.wardLesson && (
-                  <p className="mt-3 rounded border border-cyan-300/25 bg-cyan-950/30 p-3 text-cyan-100">
-                    {stop.wardLesson}
-                  </p>
-                )}
-              </section>
-
-              {error && <p className="rounded border border-red-400/40 bg-red-950/40 p-3 text-red-100">{error}</p>}
-            </div>
-
-            <aside className="flex min-h-0 flex-col gap-3">
-              {result && (
-                <>
-                  <section className="rounded border border-white/15 bg-black/35 p-3">
-                    <p className="text-xs tracking-wide text-white/50 uppercase">Familiar output</p>
-                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-white/85">
-                      {result.familiarOutput}
-                    </pre>
-                  </section>
-
-                  <section className="rounded border border-white/15 bg-black/35 p-3">
-                    <p className="text-xs tracking-wide text-white/50 uppercase">Resolution</p>
-                    <p className="mt-2 text-xl font-bold">
-                      {OUTCOME_COPY[result.resolution.outcome]}
-                      {result.resolution.isCrit ? " · Crit" : ""}
-                    </p>
-                    <p className="text-white/70">Damage {result.resolution.damage}</p>
-                    <p className="mt-2 text-white/70">Judge score {result.judge.score}</p>
-                    <p className="text-white/70">Elegance {result.judge.elegance}</p>
-                    <p className="mt-2 text-white/85">{result.judge.feedback}</p>
-                  </section>
-
-                  <section className="rounded border border-emerald-300/25 bg-emerald-950/25 p-3">
-                    <p className="text-xs tracking-wide text-emerald-200 uppercase">XP</p>
-                    <p className="mt-2 text-xl font-bold text-emerald-100">+{result.xp.gained}</p>
-                    <p className="text-white/65">
-                      {result.xp.actualTokens}/{result.xp.expectedTokens} prompt tokens · Economy{" "}
-                      {Math.round(result.xp.economyBonus * 100)}% · Elegance{" "}
-                      {Math.round(result.xp.eleganceBonus * 100)}%
-                    </p>
-                  </section>
-
-                  <button
-                    type="button"
-                    onClick={() => onComplete(result.xp.gained)}
-                    className="rounded border border-emerald-300/70 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
-                  >
-                    Record result
-                  </button>
-                </>
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-3 sm:p-4">
+            <section className="rounded border border-white/15 bg-black/35 p-4">
+              <p className="text-white/70">{stop.puzzle.flavor}</p>
+              <p className="mt-3 leading-relaxed">{stop.puzzle.brief}</p>
+              {stop.wardLesson && (
+                <p className="mt-3 rounded border border-cyan-300/25 bg-cyan-950/30 p-3 text-cyan-100">
+                  {stop.wardLesson}
+                </p>
               )}
-            </aside>
+            </section>
           </div>
         </section>
+
+        {showJudgeDialog && (
+          <JudgeDialog loading={loading} error={error} result={result} onContinue={onComplete} />
+        )}
       </div>
 
-      <div className="fixed inset-x-3 bottom-3 z-30 sm:inset-x-6 sm:bottom-6">
+      <div className="fixed inset-x-2 bottom-2 z-30 sm:inset-x-6 sm:bottom-6">
         <form
           onSubmit={handleSubmit}
-          className="liquid-glass encounter-glass animate-blur-fade-up mx-auto max-w-2xl rounded-xl p-3"
+          className="liquid-glass encounter-glass animate-blur-fade-up mx-auto max-w-2xl rounded-xl p-2 sm:p-3"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <input
               type="text"
               value={prompt}
               onChange={handlePromptChange}
               disabled={loading || result !== null}
               placeholder="Write the one prompt your fixed familiar will cast..."
-              className="min-w-0 flex-1 rounded border border-white/15 bg-black/45 px-3 py-2 font-mono text-sm leading-relaxed text-white outline-none focus:border-emerald-300 disabled:opacity-60"
+              className="min-w-0 flex-1 rounded border border-white/15 bg-black/45 px-2 py-1.5 font-mono text-sm leading-relaxed text-white outline-none focus:border-emerald-300 disabled:opacity-60 sm:px-3 sm:py-2"
             />
             <button
               type="submit"
               disabled={loading || !prompt.trim() || result !== null}
-              className="shrink-0 rounded bg-emerald-400 px-3 py-2 text-xs font-bold text-zinc-950 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-35"
+              className="shrink-0 rounded bg-emerald-400 px-2 py-1.5 text-xs font-bold text-zinc-950 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-35 sm:px-3 sm:py-2"
             >
               {loading ? "Casting..." : "Cast"}
             </button>

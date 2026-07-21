@@ -1,19 +1,23 @@
 import type { EnemySpritePreset } from "./types";
 
 const WALKING_FRAME_COUNT = 24;
+/** Frame counts for the combat-resolution reaction (issue: combat resolution) — fixed by the craftpix pack itself. */
+export const HURT_FRAME_COUNT = 12;
+export const DYING_FRAME_COUNT = 15;
 const IMAGE_SIZE = 900;
 
 /**
- * Builds the ordered walking-frame paths for one Minotaur variant, straight
- * from its raw craftpix pack (`public/assets/enemies/Minotaur_<n>/PNG/PNG
- * Sequences/Walking/...`) — the same "reference the raw PNG Sequences frames
- * directly, don't stage a copy" convention the Wraith's own walking animation
- * uses on the loading screen (`LoadingTransition`'s `walkingFrame`).
+ * Builds the ordered frame paths for one named sequence (`Walking`, `Hurt`,
+ * `Dying`, ...) of one Minotaur variant, straight from its raw craftpix pack
+ * (`public/assets/enemies/Minotaur_<n>/PNG/PNG Sequences/<sequence>/...`) —
+ * the same "reference the raw PNG Sequences frames directly, don't stage a
+ * copy" convention the Wraith's own walking animation uses on the loading
+ * screen (`LoadingTransition`'s `walkingFrame`).
  */
-function minotaurWalkingFrames(variant: number): string[] {
-  return Array.from({ length: WALKING_FRAME_COUNT }, (_, frame) => {
+function minotaurSequenceFrames(variant: number, sequence: string, frameCount: number): string[] {
+  return Array.from({ length: frameCount }, (_, frame) => {
     const frameNumber = String(frame).padStart(3, "0");
-    return `/assets/enemies/Minotaur_${variant}/PNG/PNG Sequences/Walking/0_Minotaur_Walking_${frameNumber}.png`;
+    return `/assets/enemies/Minotaur_${variant}/PNG/PNG Sequences/${sequence}/0_Minotaur_${sequence}_${frameNumber}.png`;
   });
 }
 
@@ -31,7 +35,9 @@ export const MINOTAUR_PRESETS: EnemySpritePreset[] = [1, 2, 3].map((variant) => 
   id: `minotaur-${variant}`,
   label: `Minotaur ${variant}`,
   idleImageSrc: minotaurIdleImage(variant),
-  walkingFrameSrcs: minotaurWalkingFrames(variant),
+  walkingFrameSrcs: minotaurSequenceFrames(variant, "Walking", WALKING_FRAME_COUNT),
+  hurtFrameSrcs: minotaurSequenceFrames(variant, "Hurt", HURT_FRAME_COUNT),
+  dyingFrameSrcs: minotaurSequenceFrames(variant, "Dying", DYING_FRAME_COUNT),
   imageWidth: IMAGE_SIZE,
   imageHeight: IMAGE_SIZE,
 }));

@@ -6,6 +6,7 @@ import { BackgroundVideo } from "@/components/BackgroundVideo";
 import { SPRITE_PRESETS } from "@/lib/assets";
 import { getCharacterDraft } from "@/lib/character";
 import { getBattlegroundForStop } from "@/lib/convocation/battleground";
+import type { Outcome } from "@/lib/combat/types";
 import { CONVOCATION_STOPS } from "@/lib/convocation/stops";
 import {
   completeStop,
@@ -36,6 +37,7 @@ export function ConvocationMap() {
   );
   const [encounterStopId, setEncounterStopId] = useState<number | null>(null);
   const [entranceComplete, setEntranceComplete] = useState(false);
+  const [combatOutcome, setCombatOutcome] = useState<Outcome | null>(null);
 
   useEffect(() => {
     if (progress.completedThrough >= CONVOCATION_STOPS.length && !getCharacterDraft()) {
@@ -46,6 +48,7 @@ export function ConvocationMap() {
   function handleStopClick(stopId: number, state: TrialCardState) {
     if (state !== "current") return;
     setEntranceComplete(false);
+    setCombatOutcome(null);
     setEncounterStopId(stopId);
   }
 
@@ -53,11 +56,13 @@ export function ConvocationMap() {
     completeStop(stopId, xpGained);
     setEncounterStopId(null);
     setEntranceComplete(false);
+    setCombatOutcome(null);
   }
 
   function handleClose() {
     setEncounterStopId(null);
     setEntranceComplete(false);
+    setCombatOutcome(null);
   }
 
   const encounterStop = CONVOCATION_STOPS.find((stop) => stop.id === encounterStopId) ?? null;
@@ -120,6 +125,7 @@ export function ConvocationMap() {
             stopId={encounterStop.id}
             playerSpritePresetId={playerSpritePresetId}
             onEntranceComplete={handleEntranceComplete}
+            outcome={combatOutcome}
           />
 
           {entranceComplete && (
@@ -128,10 +134,12 @@ export function ConvocationMap() {
                 stop={encounterStop}
                 onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
                 onClose={handleClose}
+                onResolved={setCombatOutcome}
               />
               <ConvocationHud
                 playerSpritePresetId={playerSpritePresetId}
                 enemyPresetId={getBattlegroundForStop(encounterStop.id).enemyPresetId}
+                outcome={combatOutcome}
               />
             </>
           )}
