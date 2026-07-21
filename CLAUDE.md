@@ -1,3 +1,13 @@
+# This is NOT the Next.js you know
+
+This project runs Next.js 16, which has breaking changes vs. older training data — APIs, conventions, and file structure may differ. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
+## Development
+
+- `npm run dev` — start the dev server (http://localhost:3000)
+- `npm run build` — production build
+- `npm run lint` — lint
+
 ## Agent skills
 
 ### Issue tracker
