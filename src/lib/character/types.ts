@@ -1,0 +1,83 @@
+/**
+ * Core types for Renny's Character Creation flow (issue #3).
+ *
+ * See docs/adr/0002-character-creation.md for the full contract and for the
+ * provisional-placeholder notes on stats/mana (both real systems belong to
+ * issue #5, "Stats & Mana Economy", which is not implemented yet).
+ */
+import type { CharacterSpriteConfig } from "@/lib/assets";
+
+/** The 7 playable classes. Stable ids — used as storage/lookup keys. */
+export type ClassId =
+  | "rogue"
+  | "knight"
+  | "wizard"
+  | "bard"
+  | "cleric"
+  | "hunter"
+  | "monk";
+
+/**
+ * The 5 core stats (`prompt-quest-full-spec.md` §5.3 — the design doc's
+ * original 4-stat display is superseded by this 5-stat version).
+ */
+export interface CharacterStats {
+  /** Flat multiplier on damage dealt. */
+  str: number;
+  /** Max token budget for a single prompt/cast. */
+  int: number;
+  /** Max mana pool across a fight. */
+  wis: number;
+  /** Turn order within a round — who casts first. */
+  spd: number;
+  /** Crit chance. */
+  lck: number;
+}
+
+/** How a named spell's mana cost is derived from the baseline cost. */
+export type SpellCostModel =
+  | { kind: "free" }
+  | { kind: "baseline"; multiplier: number };
+
+/** One entry in a class's Lv1/25/50/75/100 skill tree. */
+export interface SpellDef {
+  level: 1 | 25 | 50 | 75 | 100;
+  name: string;
+  description: string;
+  cost: SpellCostModel;
+}
+
+/** A class's unique Ward spell (counters prompt injection — mechanics land with issue #7). */
+export interface WardDef {
+  name: string;
+  description: string;
+  cost: SpellCostModel;
+}
+
+/** Static, designer-authored data describing one of the 7 classes. */
+export interface ClassDefinition {
+  id: ClassId;
+  name: string;
+  tagline: string;
+  /** Which model lineage this class's familiar draws from, in-fiction. */
+  familiar: string;
+  spells: SpellDef[];
+  ward: WardDef;
+}
+
+/**
+ * The persisted result of Character Creation: everything needed to hand a
+ * freshly-created hero off to the rest of the game. `startingHp`/
+ * `startingMana` are the character's full pools at creation time (the
+ * character starts at full health/mana, so no separate "current" value is
+ * needed yet).
+ */
+export interface CharacterRecord {
+  name: string;
+  classId: ClassId;
+  sprite: CharacterSpriteConfig;
+  stats: CharacterStats;
+  startingHp: number;
+  startingMana: number;
+  createdAt: string;
+}
