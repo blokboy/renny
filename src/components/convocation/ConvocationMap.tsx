@@ -20,7 +20,6 @@ import { ConvocationEncounter } from "./ConvocationEncounter";
 import { ConvocationClassChoice } from "./ConvocationClassChoice";
 import { ConvocationHud } from "./ConvocationHud";
 import { ConvocationTrialCard, type TrialCardState } from "./ConvocationTrialCard";
-import { PortraitGate } from "./PortraitGate";
 
 function stopState(stopId: number, completedThrough: number): TrialCardState {
   if (stopId <= completedThrough) return "completed";
@@ -120,7 +119,7 @@ export function ConvocationMap() {
       </div>
 
       {encounterStop && (
-        <PortraitGate key={encounterStop.id}>
+        <>
           <ConvocationBattleStage
             stopId={encounterStop.id}
             playerSpritePresetId={playerSpritePresetId}
@@ -143,7 +142,7 @@ export function ConvocationMap() {
               />
             </>
           )}
-        </PortraitGate>
+        </>
       )}
 
       {progress.completedThrough >= CONVOCATION_STOPS.length && !encounterStop && (
