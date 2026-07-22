@@ -28,7 +28,7 @@ export function Pill({ tone = "neutral", tooltip, children }: PillProps) {
   function showTooltip() {
     if (!tooltip) return;
     const rect = ref.current?.getBoundingClientRect();
-    if (rect) setTooltipPos({ top: rect.top, left: rect.left + rect.width / 2 });
+    if (rect) setTooltipPos({ top: rect.bottom, left: rect.left + rect.width / 2 });
   }
 
   return (
@@ -43,7 +43,7 @@ export function Pill({ tone = "neutral", tooltip, children }: PillProps) {
         typeof document !== "undefined" &&
         createPortal(
           <span
-            className="pointer-events-none fixed z-50 mt-[-8px] w-56 -translate-x-1/2 -translate-y-full rounded border border-emerald-300/30 bg-zinc-950 p-2 text-[10px] font-normal tracking-normal text-emerald-100 normal-case shadow-lg"
+            className="pointer-events-none fixed z-50 mt-2 w-56 -translate-x-1/2 rounded border border-emerald-300/30 bg-zinc-950 p-2 text-[10px] font-normal tracking-normal text-emerald-100 normal-case shadow-lg"
             style={{ top: tooltipPos.top, left: tooltipPos.left }}
           >
             {tooltip}

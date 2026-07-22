@@ -27,6 +27,8 @@ export interface PuzzlePanelHeaderProps {
   /** Renders the pill Exit button only when provided — not every combat screen has a "leave early" action. */
   onClose?: () => void;
   closeDisabled?: boolean;
+  /** Rendered inline next to the title itself — e.g. Convocation's family pill. */
+  titleAdornment?: React.ReactNode;
   /** The family/preview/status pill row — compose `Pill` elements here. */
   pills?: React.ReactNode;
 }
@@ -38,6 +40,7 @@ export function PuzzlePanelHeader({
   title,
   onClose,
   closeDisabled,
+  titleAdornment,
   pills,
 }: PuzzlePanelHeaderProps) {
   return (
@@ -45,9 +48,12 @@ export function PuzzlePanelHeader({
       <div className="flex items-start justify-between gap-2">
         <div>
           {eyebrow && <p className="text-xs text-emerald-300 uppercase">{eyebrow}</p>}
-          <h2 id={titleId} className="text-sm font-bold sm:text-lg">
-            {title}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 id={titleId} className="text-sm font-bold sm:text-lg">
+              {title}
+            </h2>
+            {titleAdornment}
+          </div>
         </div>
         {onClose && (
           <button

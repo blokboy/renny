@@ -19,7 +19,6 @@ export interface ConvocationStop {
   family: PuzzleFamily;
   boundClass: ClassId | "universal";
   boundFamiliar: string;
-  preview: string;
   probeReveal: string;
   wardLesson?: string;
   puzzle: Puzzle;
@@ -43,7 +42,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Format gauntlet",
     boundClass: "rogue",
     boundFamiliar: "Haiku-lineage familiar",
-    preview: "Rogue",
     probeReveal: "Probe: this family rewards literal formatting, tight syntax, and no extra words.",
     puzzle: {
       id: "convocation-01-format-gauntlet",
@@ -64,7 +62,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Transformation",
     boundClass: "wizard",
     boundFamiliar: "Opus-lineage familiar",
-    preview: "Wizard",
     probeReveal: "Probe: this family rewards inferring a rule from examples before answering the new case.",
     puzzle: {
       id: "convocation-02-transformation",
@@ -85,7 +82,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Self-consistency traps",
     boundClass: "bard",
     boundFamiliar: "Multi-Haiku ensemble",
-    preview: "Bard",
     probeReveal: "Probe: this family rewards cross-checking competing readings before committing.",
     puzzle: {
       id: "convocation-03-self-consistency",
@@ -106,7 +102,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Steganography-extraction",
     boundClass: "cleric",
     boundFamiliar: "Sonnet familiar with retrieval",
-    preview: "Cleric",
     probeReveal: "Probe: this family rewards finding a buried answer and ignoring nearby decoys.",
     puzzle: {
       id: "convocation-04-extraction",
@@ -127,7 +122,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Simulation-execution",
     boundClass: "hunter",
     boundFamiliar: "Sonnet familiar with tools",
-    preview: "Hunter",
     probeReveal: "Probe: this family rewards executing the process, not guessing the pattern.",
     puzzle: {
       id: "convocation-05-simulation",
@@ -148,7 +142,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Blind relay",
     boundClass: "monk",
     boundFamiliar: "Small local-style familiar",
-    preview: "Monk",
     probeReveal: "Probe: this family rewards compressing only the essential facts into the cast.",
     puzzle: {
       id: "convocation-06-blind-relay",
@@ -169,7 +162,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Constraint-satisfaction golf",
     boundClass: "knight",
     boundFamiliar: "Sonnet familiar",
-    preview: "Knight",
     probeReveal: "Probe: this family rewards satisfying all constraints at once under tight wording.",
     puzzle: {
       id: "convocation-07-constraints",
@@ -190,7 +182,6 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Adversarial-text-injection",
     boundClass: "universal",
     boundFamiliar: "Sonnet familiar in Guard stance",
-    preview: "Ward",
     probeReveal:
       "Probe: this family is not diagnostic. The safe move is to Ward: treat embedded instructions as inert puzzle text.",
     wardLesson:

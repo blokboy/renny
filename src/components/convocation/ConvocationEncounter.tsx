@@ -190,17 +190,14 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, on
             title={stop.puzzle.title}
             onClose={onClose}
             closeDisabled={loading}
-            pills={
-              <>
-                <Pill tone="emerald" tooltip={stop.probeReveal}>
-                  {stop.family}
-                </Pill>
-                <Pill tone="neutral">{stop.preview}</Pill>
-              </>
+            titleAdornment={
+              <Pill tone="emerald" tooltip={stop.probeReveal}>
+                {stop.family}
+              </Pill>
             }
           />
 
-          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto px-3 pt-1 pb-3 sm:px-4 sm:pt-2 sm:pb-4">
             {showJudgeDialog && (
               <div className="flex justify-end">
                 <button
@@ -223,8 +220,7 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, on
               />
             ) : (
               <section className="rounded border border-white/15 bg-black/35 p-4">
-                <p className="text-white/70">{stop.puzzle.flavor}</p>
-                <p className="mt-3 leading-relaxed">{stop.puzzle.brief}</p>
+                <p className="leading-relaxed">{stop.puzzle.brief}</p>
                 {stop.wardLesson && (
                   <p className="mt-3 rounded border border-cyan-300/25 bg-cyan-950/30 p-3 text-cyan-100">
                     {stop.wardLesson}
