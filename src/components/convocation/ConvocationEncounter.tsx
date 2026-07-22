@@ -1,11 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import type { ConvocationStop } from "@/lib/convocation/stops";
 import type { ConvocationCastResponse } from "@/lib/convocation/encounter";
 import type { Outcome } from "@/lib/combat/types";
-import { HUD_FOOTPRINT_PX } from "./ConvocationHud";
+import { Pill, PuzzlePanel, PuzzlePanelHeader, type PanelInsets } from "@/components/combat";
 
 interface ConvocationEncounterProps {
   stop: ConvocationStop;
@@ -13,6 +12,8 @@ interface ConvocationEncounterProps {
   onClose: () => void;
   /** Fires the moment the Judge's outcome is known, before the player reads it — drives the sprites' combat reaction (see `ConvocationBattleStage`) and the HUD's health drain. */
   onResolved?: (outcome: Outcome) => void;
+  /** Live-measured clearance from each `ConvocationHud` card — see `usePanelInsets`, computed by `ConvocationMap`. */
+  insets: PanelInsets;
 }
 
 const OUTCOME_COPY: Record<Outcome, string> = {
@@ -30,64 +31,12 @@ const OUTCOME_TONE: Record<Outcome, string> = {
 /** Tutorial-phase prompts are capped short — the Convocation is a diagnostic, not a full cast. */
 const WORD_LIMIT = 12;
 
-/** Clearance the puzzle panel keeps from each `ConvocationHud` block. */
-const PANEL_HUD_GAP_PX = 3;
-const PANEL_INSET_STYLE = {
-  "--panel-inset-x": `${HUD_FOOTPRINT_PX.base + PANEL_HUD_GAP_PX}px`,
-  "--panel-inset-x-sm": `${HUD_FOOTPRINT_PX.sm + PANEL_HUD_GAP_PX}px`,
-} as React.CSSProperties;
-
 function countWords(text: string): number {
   const trimmed = text.trim();
   return trimmed === "" ? 0 : trimmed.split(/\s+/).length;
 }
 
-interface FamilyPillProps {
-  family: string;
-  probeReveal: string;
-}
-
-/**
- * The puzzle-type pill, with the probe hint shown on hover. Portaled to
- * `document.body` rather than positioned as a normal absolute descendant —
- * the panel's `overflow-hidden` (needed for the liquid-glass edge) would
- * otherwise clip a tooltip that pops out above the pill.
- */
-function FamilyPill({ family, probeReveal }: FamilyPillProps) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
-
-  function showTooltip() {
-    const rect = ref.current?.getBoundingClientRect();
-    if (rect) {
-      setTooltipPos({ top: rect.top, left: rect.left + rect.width / 2 });
-    }
-  }
-
-  return (
-    <span
-      ref={ref}
-      onMouseEnter={showTooltip}
-      onMouseLeave={() => setTooltipPos(null)}
-      className="shrink-0 whitespace-nowrap rounded-full border border-emerald-300/40 bg-emerald-950/30 px-2.5 py-0.5 text-[9px] tracking-wide text-emerald-200 uppercase"
-    >
-      {family}
-      {tooltipPos &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <span
-            className="pointer-events-none fixed z-50 mt-[-8px] w-56 -translate-x-1/2 -translate-y-full rounded border border-emerald-300/30 bg-zinc-950 p-2 text-[10px] font-normal tracking-normal text-emerald-100 normal-case shadow-lg"
-            style={{ top: tooltipPos.top, left: tooltipPos.left }}
-          >
-            {probeReveal}
-          </span>,
-          document.body,
-        )}
-    </span>
-  );
-}
-
-interface JudgeDialogProps {
+interface JudgeAnalysisProps {
   loading: boolean;
   error: string | null;
   result: ConvocationCastResponse | null;
@@ -95,32 +44,30 @@ interface JudgeDialogProps {
 }
 
 /**
- * A second dialog, stacked below the puzzle panel, that owns the cast's
- * outcome — separate from the panel (which only ever shows the puzzle
- * itself) so the panel doesn't grow/shrink as a cast resolves. Walks
- * loading -> error | result; renders nothing before the first cast.
+ * The cast's outcome, rendered inline in the puzzle panel's body (swapped
+ * in for the puzzle text via the panel's view toggle) rather than as its
+ * own stacked container — keeps a single glass panel on screen instead of
+ * two, which is most of the vertical space this saves. Walks loading ->
+ * error | result.
  */
-function JudgeDialog({ loading, error, result, onContinue }: JudgeDialogProps) {
+function JudgeAnalysis({ loading, error, result, onContinue }: JudgeAnalysisProps) {
   return (
-    <section
-      aria-live="polite"
-      className="liquid-glass encounter-glass animate-blur-fade-up w-full max-w-2xl rounded-xl p-3 font-mono text-sm text-white sm:p-4"
-    >
+    <div aria-live="polite" className="flex flex-col gap-2">
       <p className="text-[9px] tracking-[0.25em] text-white/50 uppercase">The Judge</p>
 
       {loading && (
-        <p className="mt-2 flex items-center gap-2 text-white/75">
+        <p className="flex items-center gap-2 text-white/75">
           <span className="flex h-2 w-2 animate-ping rounded-full bg-emerald-300" />
           Analyzing your cast...
         </p>
       )}
 
       {!loading && error && (
-        <p className="mt-2 rounded border border-red-400/40 bg-red-950/40 p-3 text-red-100">{error}</p>
+        <p className="rounded border border-red-400/40 bg-red-950/40 p-3 text-red-100">{error}</p>
       )}
 
       {!loading && result && (
-        <div className="mt-2 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <section className={`rounded border p-3 ${OUTCOME_TONE[result.resolution.outcome]}`}>
             <p className="text-xl font-bold">
               {OUTCOME_COPY[result.resolution.outcome]}
@@ -158,15 +105,17 @@ function JudgeDialog({ loading, error, result, onContinue }: JudgeDialogProps) {
           </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
-export function ConvocationEncounter({ stop, onComplete, onClose, onResolved }: ConvocationEncounterProps) {
+export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, insets }: ConvocationEncounterProps) {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ConvocationCastResponse | null>(null);
+  /** Toggles the panel body between the puzzle brief and the Judge's analysis — see `showJudgeDialog` below. */
+  const [view, setView] = useState<"puzzle" | "judge">("puzzle");
 
   function handlePromptChange(event: React.ChangeEvent<HTMLInputElement>) {
     const value = event.target.value;
@@ -181,6 +130,7 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved }: 
 
     setLoading(true);
     setError(null);
+    setView("judge");
 
     try {
       const response = await fetch("/api/convocation/cast", {
@@ -207,54 +157,57 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved }: 
   return (
     <>
       <div
-        className="fixed inset-0 z-30 flex flex-col items-center justify-start gap-3 overflow-y-auto px-[var(--panel-inset-x)] pt-3 pb-3 sm:px-[var(--panel-inset-x-sm)] sm:pt-6"
-        style={PANEL_INSET_STYLE}
+        className="fixed inset-0 z-30 flex flex-col items-center justify-start gap-3 overflow-y-auto pt-3 pb-3 sm:pt-6"
+        style={{ paddingLeft: insets.left, paddingRight: insets.right }}
       >
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="convocation-encounter-title"
-          className="liquid-glass encounter-glass animate-blur-fade-up grid max-h-[40vh] w-full max-w-2xl grid-rows-[auto_1fr] overflow-hidden rounded-xl font-mono text-sm text-white"
+        <PuzzlePanel
+          titleId="convocation-encounter-title"
+          className="max-h-[50vh] w-full max-w-2xl"
         >
-          <header className="border-b border-white/15 px-3 py-2 sm:px-4 sm:py-3">
-            <div className="flex items-start justify-between gap-2">
-              <h2 id="convocation-encounter-title" className="text-sm font-bold sm:text-lg">
-                {stop.puzzle.title}
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                className="shrink-0 rounded-full border border-white/20 px-2.5 py-0.5 text-[9px] tracking-wide uppercase hover:bg-white/10 disabled:opacity-40"
-              >
-                Exit
-              </button>
-            </div>
-            <div className="mx-[-0.75rem] mt-2 flex w-[calc(100%+1.5rem)] items-center gap-1.5 overflow-x-auto border-y border-white/10 bg-black/15 px-3 py-1.5 sm:mx-[-1rem] sm:w-[calc(100%+2rem)] sm:gap-2 sm:px-4">
-              <FamilyPill family={stop.family} probeReveal={stop.probeReveal} />
-              <span className="shrink-0 whitespace-nowrap rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[9px] tracking-wide text-white/70 uppercase">
-                {stop.preview}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-white/55">{stop.hint} One prompt. One cast.</p>
-          </header>
+          <PuzzlePanelHeader
+            titleId="convocation-encounter-title"
+            title={stop.puzzle.title}
+            onClose={onClose}
+            closeDisabled={loading}
+            pills={
+              <>
+                <Pill tone="emerald" tooltip={stop.probeReveal}>
+                  {stop.family}
+                </Pill>
+                <Pill tone="neutral">{stop.preview}</Pill>
+              </>
+            }
+            hint={`${stop.hint} One prompt. One cast.`}
+          />
 
-          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-3 sm:p-4">
-            <section className="rounded border border-white/15 bg-black/35 p-4">
-              <p className="text-white/70">{stop.puzzle.flavor}</p>
-              <p className="mt-3 leading-relaxed">{stop.puzzle.brief}</p>
-              {stop.wardLesson && (
-                <p className="mt-3 rounded border border-cyan-300/25 bg-cyan-950/30 p-3 text-cyan-100">
-                  {stop.wardLesson}
-                </p>
-              )}
-            </section>
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
+            {showJudgeDialog && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setView(view === "judge" ? "puzzle" : "judge")}
+                  className="shrink-0 rounded-full border border-white/20 px-2.5 py-0.5 text-[9px] tracking-wide uppercase hover:bg-white/10"
+                >
+                  {view === "judge" ? "Puzzle" : "Result"}
+                </button>
+              </div>
+            )}
+
+            {view === "judge" && showJudgeDialog ? (
+              <JudgeAnalysis loading={loading} error={error} result={result} onContinue={onComplete} />
+            ) : (
+              <section className="rounded border border-white/15 bg-black/35 p-4">
+                <p className="text-white/70">{stop.puzzle.flavor}</p>
+                <p className="mt-3 leading-relaxed">{stop.puzzle.brief}</p>
+                {stop.wardLesson && (
+                  <p className="mt-3 rounded border border-cyan-300/25 bg-cyan-950/30 p-3 text-cyan-100">
+                    {stop.wardLesson}
+                  </p>
+                )}
+              </section>
+            )}
           </div>
-        </section>
-
-        {showJudgeDialog && (
-          <JudgeDialog loading={loading} error={error} result={result} onContinue={onComplete} />
-        )}
+        </PuzzlePanel>
       </div>
 
       <div className="fixed inset-x-2 bottom-2 z-30 sm:inset-x-6 sm:bottom-6">

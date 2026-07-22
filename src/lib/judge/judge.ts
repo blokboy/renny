@@ -23,13 +23,14 @@ export async function judgeCast(
 ): Promise<JudgeResult> {
   const { text } = await generateText({
     model: getJudgeModel(),
+    maxOutputTokens: 80,
     system:
       "You are the Judge in a prompt-engineering RPG. Score a familiar's output " +
       "against the given rubric. Be strict and consistent. Also return a continuous " +
       "0-1 elegance score — how minimal/precise the player's prompt was, not how good " +
-      "the familiar's output was. Respond with ONLY minified JSON matching " +
-      '{"score": number 0-1, "elegance": number 0-1, "feedback": string} — no markdown ' +
-      "fences, no other text.",
+      "the familiar's output was. Keep feedback to 25 words or fewer. Respond with ONLY " +
+      'minified JSON matching {"score": number 0-1, "elegance": number 0-1, "feedback": ' +
+      "string} — no markdown fences, no other text.",
     prompt:
       `Rubric:\n${puzzle.rubric}\n\n` +
       `Familiar's output:\n${familiarOutput}`,

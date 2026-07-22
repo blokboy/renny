@@ -1,3 +1,4 @@
+import { CharacterSprite } from "@/components/assets/CharacterSprite";
 import {
   CLASSES,
   STARTING_STATS,
@@ -14,14 +15,18 @@ export interface ClassPickerProps {
 
 /**
  * Paged class picker: prev/next through all 7 classes, showing the selected
- * class's tagline, 5 stat bars, bound familiar, Ward, and full Lv1-100 spell
- * list with cost + description — per issue #3's acceptance criteria.
+ * class's tagline, 5 stat bars, Ward, and starting (Lv1) spell with cost +
+ * description.
  */
 export function ClassPicker({ selectedIndex, onSelectIndex }: ClassPickerProps) {
   const classDef = CLASSES[selectedIndex];
   const stats = STARTING_STATS[classDef.id];
   const maxMana = getStartingMana(stats);
   const maxHp = getStartingHp(stats);
+  const startingSpell = classDef.spells.find((spell) => spell.level === 1);
+  if (!startingSpell) {
+    throw new Error(`Class "${classDef.id}" has no level-1 spell`);
+  }
 
   function goTo(index: number) {
     onSelectIndex((index + CLASSES.length) % CLASSES.length);
@@ -63,14 +68,11 @@ export function ClassPicker({ selectedIndex, onSelectIndex }: ClassPickerProps) 
       </div>
 
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
-        <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-          Class {selectedIndex + 1} of {CLASSES.length}
-        </p>
-        <h2 className="mt-1 text-2xl font-bold text-white">{classDef.name}</h2>
+        <div className="flex items-center justify-center rounded border border-zinc-800 bg-zinc-950/50 p-4">
+          <CharacterSprite config={{ presetId: classDef.id }} size={160} />
+        </div>
+        <h2 className="mt-4 text-2xl font-bold text-white">{classDef.name}</h2>
         <p className="mt-1 text-sm text-emerald-400">{classDef.tagline}</p>
-        <p className="mt-3 text-sm text-zinc-400">
-          <span className="font-medium text-zinc-300">Bound familiar:</span> {classDef.familiar}
-        </p>
 
         <div className="mt-6 flex flex-col gap-2">
           <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">Stats</p>
@@ -102,23 +104,15 @@ export function ClassPicker({ selectedIndex, onSelectIndex }: ClassPickerProps) 
 
         <div className="mt-6 flex flex-col gap-2">
           <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-            Spell list
+            Starting spell
           </p>
-          <ul className="flex flex-col gap-2">
-            {classDef.spells.map((spell) => (
-              <li key={spell.level} className="rounded border border-zinc-800 p-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-medium text-white">
-                    Lv {spell.level} — {spell.name}
-                  </span>
-                  <span className="text-xs text-zinc-500">
-                    {formatSpellCost(maxMana, spell.cost)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-400">{spell.description}</p>
-              </li>
-            ))}
-          </ul>
+          <div className="rounded border border-zinc-800 p-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm font-medium text-white">{startingSpell.name}</span>
+              <span className="text-xs text-zinc-500">{formatSpellCost(maxMana, startingSpell.cost)}</span>
+            </div>
+            <p className="mt-1 text-xs text-zinc-400">{startingSpell.description}</p>
+          </div>
         </div>
       </div>
     </div>
