@@ -335,7 +335,7 @@ export function GuardianBattle() {
           className="relative z-10 flex h-full flex-col pt-3 sm:pt-6"
           style={{ paddingLeft: panelInsets.left, paddingRight: panelInsets.right }}
         >
-          <PuzzlePanel titleId="guardian-battle-title" className="max-h-[34vh] sm:max-h-[38vh]">
+          <PuzzlePanel titleId="guardian-battle-title" className="h-[34vh] sm:h-auto sm:max-h-[38vh]">
             <PuzzlePanelHeader
               titleId="guardian-battle-title"
               eyebrow={`Turn ${battle.turn} · ${currentPhaseLabel()}`}
@@ -351,7 +351,7 @@ export function GuardianBattle() {
             <div className="flex min-h-0 flex-col overflow-y-auto p-4 sm:p-5">
             {!terminal && puzzle && (
               <>
-                <div className="mt-4 border-y border-white/10 py-4 leading-relaxed">
+                <div className="mt-4 py-4 leading-relaxed">
                   <p className="text-zinc-400">{puzzle.flavor}</p>
                   {battle.phase === "shield" && encounter.shield.kind === "dependency-lock" && (
                     <div className="mt-4 border-l-2 border-cyan-300 bg-cyan-950/25 p-3">
@@ -364,7 +364,7 @@ export function GuardianBattle() {
                 </div>
 
                 {battle.phase === "shield" && encounter.shield.kind === "interrogation" && interrogation && (
-                  <div className="mt-4 border-y border-white/10 py-4">
+                  <div className="mt-4 py-4">
                     <p className="text-xs text-zinc-500 uppercase">Party chat</p>
                     {interrogation.exchanges.length === 0 ? (
                       <p className="mt-2 text-sm text-zinc-600">No questions answered yet.</p>

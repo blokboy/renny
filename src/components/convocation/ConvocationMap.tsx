@@ -149,6 +149,7 @@ export function ConvocationMap() {
                 onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
                 onClose={handleClose}
                 onResolved={setCombatOutcome}
+                onRetry={() => setCombatOutcome(null)}
                 insets={panelInsets}
               />
               <ConvocationHud

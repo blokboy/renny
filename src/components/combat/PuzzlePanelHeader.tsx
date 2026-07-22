@@ -29,7 +29,6 @@ export interface PuzzlePanelHeaderProps {
   closeDisabled?: boolean;
   /** The family/preview/status pill row — compose `Pill` elements here. */
   pills?: React.ReactNode;
-  hint?: string;
 }
 
 /** Shared puzzle-panel header: title row, optional Exit button, and a full-bleed pill strip. */
@@ -40,10 +39,9 @@ export function PuzzlePanelHeader({
   onClose,
   closeDisabled,
   pills,
-  hint,
 }: PuzzlePanelHeaderProps) {
   return (
-    <header className="border-b border-white/15 px-3 py-2 sm:px-4 sm:py-3">
+    <header className="px-3 py-2 sm:px-4 sm:py-3">
       <div className="flex items-start justify-between gap-2">
         <div>
           {eyebrow && <p className="text-xs text-emerald-300 uppercase">{eyebrow}</p>}
@@ -63,11 +61,10 @@ export function PuzzlePanelHeader({
         )}
       </div>
       {pills && (
-        <div className="mx-[-0.75rem] mt-2 flex w-[calc(100%+1.5rem)] items-center gap-1.5 overflow-x-auto border-y border-white/10 bg-black/15 px-3 py-1.5 sm:mx-[-1rem] sm:w-[calc(100%+2rem)] sm:gap-2 sm:px-4">
+        <div className="mx-[-0.75rem] mt-2 flex w-[calc(100%+1.5rem)] items-center gap-1.5 overflow-x-auto bg-black/15 px-3 py-1.5 sm:mx-[-1rem] sm:w-[calc(100%+2rem)] sm:gap-2 sm:px-4">
           {pills}
         </div>
       )}
-      {hint && <p className="mt-1 text-xs text-white/55">{hint}</p>}
     </header>
   );
 }

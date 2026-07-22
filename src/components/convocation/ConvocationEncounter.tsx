@@ -12,6 +12,8 @@ interface ConvocationEncounterProps {
   onClose: () => void;
   /** Fires the moment the Judge's outcome is known, before the player reads it — drives the sprites' combat reaction (see `ConvocationBattleStage`) and the HUD's health drain. */
   onResolved?: (outcome: Outcome) => void;
+  /** Fires when the player retries after a non-Hit outcome — clears the sprites'/HUD's combat reaction back to neutral for the new attempt. */
+  onRetry?: () => void;
   /** Live-measured clearance from each `ConvocationHud` card — see `usePanelInsets`, computed by `ConvocationMap`. */
   insets: PanelInsets;
 }
@@ -41,6 +43,7 @@ interface JudgeAnalysisProps {
   error: string | null;
   result: ConvocationCastResponse | null;
   onContinue: (xpGained: number) => void;
+  onRetry: () => void;
 }
 
 /**
@@ -50,7 +53,7 @@ interface JudgeAnalysisProps {
  * two, which is most of the vertical space this saves. Walks loading ->
  * error | result.
  */
-function JudgeAnalysis({ loading, error, result, onContinue }: JudgeAnalysisProps) {
+function JudgeAnalysis({ loading, error, result, onContinue, onRetry }: JudgeAnalysisProps) {
   return (
     <div aria-live="polite" className="flex flex-col gap-2">
       <p className="text-[9px] tracking-[0.25em] text-white/50 uppercase">The Judge</p>
@@ -96,20 +99,30 @@ function JudgeAnalysis({ loading, error, result, onContinue }: JudgeAnalysisProp
             </p>
           </section>
 
-          <button
-            type="button"
-            onClick={() => onContinue(result.xp.gained)}
-            className="self-start rounded border border-emerald-300/70 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
-          >
-            Continue
-          </button>
+          {result.resolution.outcome === "hit" ? (
+            <button
+              type="button"
+              onClick={() => onContinue(result.xp.gained)}
+              className="self-start rounded border border-emerald-300/70 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="self-start rounded border border-amber-300/70 px-4 py-2 text-xs text-amber-100 hover:bg-amber-300/10"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, insets }: ConvocationEncounterProps) {
+export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, onRetry, insets }: ConvocationEncounterProps) {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +164,14 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, in
     }
   }
 
+  function handleRetry() {
+    setPrompt("");
+    setError(null);
+    setResult(null);
+    setView("puzzle");
+    onRetry?.();
+  }
+
   const wordCount = countWords(prompt);
   const showJudgeDialog = loading || error !== null || result !== null;
 
@@ -162,7 +183,7 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, in
       >
         <PuzzlePanel
           titleId="convocation-encounter-title"
-          className="max-h-[50vh] w-full max-w-2xl"
+          className="h-[50vh] w-full max-w-2xl sm:h-auto sm:max-h-[50vh]"
         >
           <PuzzlePanelHeader
             titleId="convocation-encounter-title"
@@ -177,7 +198,6 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, in
                 <Pill tone="neutral">{stop.preview}</Pill>
               </>
             }
-            hint={`${stop.hint} One prompt. One cast.`}
           />
 
           <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
@@ -194,7 +214,13 @@ export function ConvocationEncounter({ stop, onComplete, onClose, onResolved, in
             )}
 
             {view === "judge" && showJudgeDialog ? (
-              <JudgeAnalysis loading={loading} error={error} result={result} onContinue={onComplete} />
+              <JudgeAnalysis
+                loading={loading}
+                error={error}
+                result={result}
+                onContinue={onComplete}
+                onRetry={handleRetry}
+              />
             ) : (
               <section className="rounded border border-white/15 bg-black/35 p-4">
                 <p className="text-white/70">{stop.puzzle.flavor}</p>
