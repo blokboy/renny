@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { BackgroundVideo } from "@/components/BackgroundVideo";
 import { SPRITE_PRESETS } from "@/lib/assets";
@@ -15,11 +15,15 @@ import {
   resetConvocationProgress,
   subscribeToConvocationProgress,
 } from "@/lib/convocation/progress";
+import { usePanelInsets } from "@/components/combat";
 import { ConvocationBattleStage } from "./ConvocationBattleStage";
 import { ConvocationEncounter } from "./ConvocationEncounter";
 import { ConvocationClassChoice } from "./ConvocationClassChoice";
 import { ConvocationHud } from "./ConvocationHud";
 import { ConvocationTrialCard, type TrialCardState } from "./ConvocationTrialCard";
+
+/** Clearance the puzzle panel keeps from each `ConvocationHud` card — see `usePanelInsets`. */
+const PANEL_HUD_GAP_PX = 8;
 
 function stopState(stopId: number, completedThrough: number): TrialCardState {
   if (stopId <= completedThrough) return "completed";
@@ -37,6 +41,14 @@ export function ConvocationMap() {
   const [encounterStopId, setEncounterStopId] = useState<number | null>(null);
   const [entranceComplete, setEntranceComplete] = useState(false);
   const [combatOutcome, setCombatOutcome] = useState<Outcome | null>(null);
+
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leftHudRef = useRef<HTMLDivElement>(null);
+  const rightHudRef = useRef<HTMLDivElement>(null);
+  const panelInsets = usePanelInsets(mapRef, leftHudRef, rightHudRef, PANEL_HUD_GAP_PX, [
+    encounterStopId,
+    entranceComplete,
+  ]);
 
   useEffect(() => {
     if (progress.completedThrough >= CONVOCATION_STOPS.length && !getCharacterDraft()) {
@@ -69,7 +81,10 @@ export function ConvocationMap() {
   const handleEntranceComplete = useCallback(() => setEntranceComplete(true), []);
 
   return (
-    <div className="font-early-gameboy relative isolate h-full w-full overflow-hidden bg-black text-white">
+    <div
+      ref={mapRef}
+      className="font-early-gameboy relative isolate h-full w-full overflow-hidden bg-black text-white"
+    >
       <BackgroundVideo />
       <div className="bottom-blur-mask fixed inset-0 z-[1] pointer-events-none" aria-hidden="true" />
       <div className="fixed inset-0 z-[2] bg-black/35" aria-hidden="true" />
@@ -134,11 +149,15 @@ export function ConvocationMap() {
                 onComplete={(xpGained) => handleComplete(encounterStop.id, xpGained)}
                 onClose={handleClose}
                 onResolved={setCombatOutcome}
+                insets={panelInsets}
               />
               <ConvocationHud
                 playerSpritePresetId={playerSpritePresetId}
                 enemyPresetId={getBattlegroundForStop(encounterStop.id).enemyPresetId}
                 outcome={combatOutcome}
+                xpFraction={progress.completedThrough / CONVOCATION_STOPS.length}
+                leftHudRef={leftHudRef}
+                rightHudRef={rightHudRef}
               />
             </>
           )}

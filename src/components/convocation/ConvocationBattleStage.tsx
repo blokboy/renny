@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { EnemySprite, SceneBackground } from "@/components/assets";
+import { EnemySprite, PoseSprite, SceneBackground } from "@/components/assets";
 import { getBattlegroundForStop } from "@/lib/convocation/battleground";
 import type { Outcome } from "@/lib/combat/types";
-import { WraithEntranceSprite } from "./WraithEntranceSprite";
 
 export interface ConvocationBattleStageProps {
   stopId: number;
@@ -25,7 +24,7 @@ export interface ConvocationBattleStageProps {
 const ENTRANCE_DURATION_MS = 900;
 const ACTOR_SIZE = 160;
 
-/** Matches the sprite components' own frame counts/pacing (`HURT_FRAME_COUNT` etc. in enemy-presets.ts and `POSE_SEQUENCE` in WraithEntranceSprite) so the hurt→dying handoff lands right as the hurt loop finishes. */
+/** Matches the sprite components' own frame counts/pacing (`HURT_FRAME_COUNT` etc. in enemy-presets.ts and the Wraith pose family in `PoseSprite`) so the hurt→dying handoff lands right as the hurt loop finishes. */
 const HURT_FRAME_COUNT = 12;
 const POSE_FRAME_DURATION_MS = 90;
 const HURT_DURATION_MS = HURT_FRAME_COUNT * POSE_FRAME_DURATION_MS;
@@ -87,7 +86,7 @@ export function ConvocationBattleStage({
   // Tracks which side `defeatPose` was last set for, so a fresh `outcome`
   // (or reduced motion jumping straight to "dying") can be applied during
   // render rather than via a synchronous setState-in-effect — see the same
-  // pattern in `WraithEntranceSprite`/`EnemySprite`'s `posedFor`.
+  // pattern in `PoseSprite`/`EnemySprite`'s `posedFor`.
   const [resolvedFor, setResolvedFor] = useState<"left" | "right" | null>(null);
 
   useEffect(() => {
@@ -130,7 +129,7 @@ export function ConvocationBattleStage({
     <div className="fixed inset-0 z-20 bg-black">
       <SceneBackground scene={scene} className="absolute inset-0 h-full w-full">
         <BattleActor side="left" started={started}>
-          <WraithEntranceSprite presetId={playerSpritePresetId} pose={leftPose} size={ACTOR_SIZE} />
+          <PoseSprite presetId={playerSpritePresetId} pose={leftPose} size={ACTOR_SIZE} />
         </BattleActor>
 
         <BattleActor side="right" started={started}>

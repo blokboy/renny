@@ -18,7 +18,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "rogue",
     name: "Rogue",
-    tagline: "Haiku lineage. Speed is a stat.",
+    tagline: "Start w/ Haiku 3",
     familiar:
       "Bound to the Haiku line — fast, cheap, and built for volume. Progresses Haiku 3 -> 3.5 -> 4.5 -> 4.5 with prefill combo openers -> two casts per turn.",
     spells: [
@@ -93,7 +93,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "knight",
     name: "Knight",
-    tagline: "Sonnet lineage. The reliable spine.",
+    tagline: "Start w/ Sonnet 3.5",
     familiar:
       "Bound to the Sonnet line — the reliable spine. Progresses Sonnet 3.5 -> 3.7 -> 4 -> 4.5 -> 4.6, unlocking a Precise/Aggressive/Guard stance system.",
     spells: [
@@ -165,7 +165,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "wizard",
     name: "Wizard",
-    tagline: "Opus lineage. Thinking budget is spell slots.",
+    tagline: "Start w/ Opus 4",
     familiar:
       "Bound to the Opus line — notoriously mana-starved at low tiers. Progresses Opus 4 (no thinking) -> 4.1 (+2k thinking tokens) -> 4.5 (+8k) -> 4.8 (+32k) -> Fable 5.",
     spells: [
@@ -245,7 +245,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "bard",
     name: "Bard",
-    tagline: "Fixed cheap model, scaling headcount.",
+    tagline: "Start w/ 2x Haiku",
     familiar:
       "Bound to a chorus of cheap voices, not one model — 2x Haiku vote -> 3x -> 5x with role-differentiated personas -> 7x with a Sonnet \"herald\" adjudicating.",
     spells: [
@@ -325,7 +325,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "cleric",
     name: "Cleric",
-    tagline: "Fixed mid model, scaling scripture (context/RAG).",
+    tagline: "Start w/ Sonnet",
     familiar:
       "Bound to a Sonnet-class model with a growing \"prayer book\" — 4k context -> 32k -> 200k with retrieval over past battles -> 1M context -> retrieval with required citations.",
     spells: [
@@ -403,7 +403,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "hunter",
     name: "Hunter",
-    tagline: "Scaling tool slots, not model.",
+    tagline: "Start w/ Sonnet + Calculator",
     familiar:
       "Bound to a Sonnet-class model armed with growing tool access — a calculator, then code execution, then web search, then a persistent memory scratchpad, then a Haiku \"construct\" companion.",
     spells: [
@@ -479,7 +479,7 @@ export const CLASSES: ClassDefinition[] = [
   {
     id: "monk",
     name: "Monk",
-    tagline: "Open-weights ascetic. No API cost, ever.",
+    tagline: "Start w/ 3B (open-weights)",
     familiar:
       "Bound to an open-weights local model — 3B -> 8B -> 32B -> 70B quantized -> 100B+ MoE. Weakest model at every tier; all casts free, so the player's prompting carries everything.",
     spells: [

@@ -1,7 +1,11 @@
 export { CharacterSprite } from "./CharacterSprite";
 export type { CharacterSpriteProps } from "./CharacterSprite";
+export { CroppedPortrait, wraithPortraitCrop } from "./CroppedPortrait";
+export type { PortraitCrop, CroppedPortraitProps } from "./CroppedPortrait";
 export { EnemySprite } from "./EnemySprite";
 export type { EnemySpriteProps } from "./EnemySprite";
+export { PoseSprite } from "./PoseSprite";
+export type { PoseSpriteProps } from "./PoseSprite";
 export { PresetPicker } from "./PresetPicker";
 export type { PresetPickerProps } from "./PresetPicker";
 export { SceneBackground } from "./SceneBackground";
