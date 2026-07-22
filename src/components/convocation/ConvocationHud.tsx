@@ -59,10 +59,8 @@ function minotaurPortrait(presetId: string): PortraitCrop {
  * `xpFraction` fills the player's third meter — during the Convocation
  * tutorial this is `completedThrough / CONVOCATION_STOPS.length`, so it
  * fills by 1/8 per stop and reaches full (level 1) exactly when the last
- * tutorial stop is done, right before the boss battle. The Minotaur's third
- * meter is a static full bar, same treatment as its Health/Mana — the
- * player's `CombatHud` is the standard layout every combatant's HUD follows,
- * not a special case.
+ * tutorial stop is done, right before the boss battle. XP is owned by the
+ * player only — the Minotaur gets just Health/Mana, no third meter.
  */
 export function ConvocationHud({
   playerSpritePresetId,
@@ -83,7 +81,6 @@ export function ConvocationHud({
   const enemyMeters: CombatMeterSpec[] = [
     { label: "Health", tone: "bg-emerald-400", fraction: 1, depleted: enemyDefeated },
     { label: "Mana", tone: "bg-cyan-300", fraction: 1 },
-    { label: "XP", tone: "bg-amber-300", fraction: 1 },
   ];
 
   return (
