@@ -42,7 +42,7 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
     family: "Format gauntlet",
     boundClass: "rogue",
     boundFamiliar: "Haiku-lineage familiar",
-    probeReveal: "Probe: this family rewards literal formatting, tight syntax, and no extra words.",
+    probeReveal: "This family of Puzzles rewards literal formatting, tight syntax, and no extra words.",
     puzzle: {
       id: "convocation-01-format-gauntlet",
       title: "The Glass Lock",
