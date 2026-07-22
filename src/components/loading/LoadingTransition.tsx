@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackgroundVideo } from "@/components/BackgroundVideo";
+import { getCharacterDraft, saveCharacterDraft } from "@/lib/character";
 
 const FRAME_COUNT = 12;
 const FRAME_DURATION_MS = 90;
@@ -28,6 +29,17 @@ export function LoadingTransition({ wraithNumber }: { wraithNumber: number }) {
     () => Array.from({ length: FRAME_COUNT }, (_, index) => walkingFrame(wraithNumber, index)),
     [wraithNumber],
   );
+
+  useEffect(() => {
+    if (!getCharacterDraft()) {
+      const wraith = String(wraithNumber).padStart(2, "0");
+      saveCharacterDraft({
+        name: "",
+        sprite: { presetId: `wraith-${wraith}` },
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }, [wraithNumber]);
 
   useEffect(() => {
     frames.forEach((src) => {
