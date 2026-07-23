@@ -412,6 +412,7 @@ export function GuardianBattle() {
       showValue: true,
       value: battle.bossHp,
       max: GUARDIAN_MAX_HP,
+      badge: battle.phase === "shield" ? <Pill tone="cyan">SHIELD ACTIVE</Pill> : undefined,
     },
   ];
 
@@ -465,7 +466,6 @@ export function GuardianBattle() {
               titleId="guardian-battle-title"
               title={puzzle?.title ?? PHASE_LABEL[battle.phase]}
               titleAdornment={puzzle && <Pill tone="emerald">{puzzle.family}</Pill>}
-              pills={battle.phase === "shield" ? <Pill tone="cyan">SHIELD ACTIVE</Pill> : undefined}
             />
 
             <div className="flex min-h-0 flex-col gap-3 overflow-y-auto px-3 pt-1 pb-3 sm:px-4 sm:pt-2 sm:pb-4">
@@ -560,7 +560,7 @@ export function GuardianBattle() {
 
       <div ref={castBarRef} className="fixed inset-x-2 bottom-2 z-30 sm:inset-x-6 sm:bottom-6">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-2 sm:grid-cols-5 sm:gap-3">
-          <div className="sm:col-span-3">
+          <div className="flex flex-col sm:col-span-3 sm:h-full">
             {!terminal && puzzle && (
               battle.phase === "shield" &&
               encounter.shield.kind === "interrogation" &&
@@ -568,7 +568,7 @@ export function GuardianBattle() {
               !finalMode ? (
                 <form
                   onSubmit={askQuestion}
-                  className="liquid-glass encounter-glass animate-blur-fade-up w-full rounded-xl p-2.5 sm:p-3"
+                  className="liquid-glass encounter-glass animate-blur-fade-up flex w-full flex-1 flex-col rounded-xl p-2.5 sm:p-3"
                 >
                   <label htmlFor="guardian-question" className="text-xs text-zinc-500 uppercase">
                     Question {interrogation.exchanges.length + 1} of 4 · {interrogation.exchanges.length === 0
@@ -581,7 +581,7 @@ export function GuardianBattle() {
                     onChange={(event) => setQuestion(event.target.value)}
                     disabled={loading}
                     placeholder="Author this party member's yes/no question..."
-                    className="mt-1.5 min-h-56 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
+                    className="mt-1.5 min-h-56 w-full flex-1 resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
                   />
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-zinc-500">Each party member gets one question.</span>
@@ -608,7 +608,7 @@ export function GuardianBattle() {
               ) : (
                 <form
                   onSubmit={cast}
-                  className="liquid-glass encounter-glass animate-blur-fade-up w-full rounded-xl p-2.5 sm:p-3"
+                  className="liquid-glass encounter-glass animate-blur-fade-up flex w-full flex-1 flex-col rounded-xl p-2.5 sm:p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <label htmlFor="guardian-prompt" className="text-xs text-zinc-500 uppercase">
@@ -640,7 +640,7 @@ export function GuardianBattle() {
                     placeholder={battle.phase === "shield" && encounter.shield.kind === "interrogation"
                       ? "Write one prompt intended to reproduce the hidden answer..."
                       : "Write the prompt your familiar will receive..."}
-                    className="mt-1.5 min-h-56 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
+                    className="mt-1.5 min-h-56 w-full flex-1 resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
                   />
                   <div className="mt-2 flex flex-wrap items-center justify-end gap-3">
                     <div className="flex flex-wrap gap-2">
@@ -678,7 +678,7 @@ export function GuardianBattle() {
             )}
           </div>
 
-          <div className="liquid-glass encounter-glass animate-blur-fade-up flex h-full min-h-0 flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
+          <div className="liquid-glass encounter-glass animate-blur-fade-up flex flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
             <div>
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Party</p>
               <div className="mt-1 grid grid-cols-3 place-items-center gap-1.5">
@@ -714,9 +714,9 @@ export function GuardianBattle() {
               </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col">
+            <div>
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Combat log</p>
-              <div className="mt-1 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
+              <div className="mt-1 max-h-56 space-y-1.5 overflow-y-auto pr-1">
                 {log.length === 0 && <p className="text-xs text-zinc-600">No casts resolved yet.</p>}
                 {log.map((entry) => (
                   <div key={entry.id} className="border-l-2 border-white/20 pl-2 text-[10px] leading-snug">

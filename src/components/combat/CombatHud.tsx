@@ -13,12 +13,15 @@ export interface CombatMeterSpec {
   showValue?: boolean;
   value?: number;
   max?: number;
+  /** Renders above this meter's label — for a state tied to this actor (e.g. a shield status), not the puzzle. */
+  badge?: React.ReactNode;
 }
 
-function Meter({ label, tone, fraction, depleted = false, showValue = false, value, max }: CombatMeterSpec) {
+function Meter({ label, tone, fraction, depleted = false, showValue = false, value, max, badge }: CombatMeterSpec) {
   const widthPercent = depleted ? 0 : Math.round(Math.min(1, Math.max(0, fraction)) * 100);
   return (
-    <div className="min-w-16 sm:min-w-36">
+    <div className="relative min-w-16 sm:min-w-36">
+      {badge && <div className="absolute bottom-full left-0 mb-1">{badge}</div>}
       <div className="mb-0.5 flex items-baseline justify-between gap-2">
         <p className="text-[8px] tracking-[0.18em] text-white/70 uppercase">{label}</p>
         {showValue && (
