@@ -360,7 +360,7 @@ export function GuardianBattle() {
                 size={COMBAT_HUD_PORTRAIT_SIZE}
               />
             }
-            caption="Guardian"
+            caption="Lv. 1"
             align="right"
             flip
             meters={bossMeters}
@@ -472,7 +472,7 @@ export function GuardianBattle() {
       </section>
 
       <div ref={castBarRef} className="fixed inset-x-2 bottom-2 z-30 sm:inset-x-6 sm:bottom-6">
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-2 sm:grid-cols-5 sm:gap-3">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-2 sm:grid-cols-5 sm:gap-3">
           <div className="sm:col-span-3">
             {!terminal && puzzle && (
               battle.phase === "shield" &&
@@ -494,7 +494,7 @@ export function GuardianBattle() {
                     onChange={(event) => setQuestion(event.target.value)}
                     disabled={loading}
                     placeholder="Author this party member's yes/no question..."
-                    className="mt-1.5 min-h-14 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
+                    className="mt-1.5 min-h-56 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
                   />
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-zinc-500">Each party member gets one question.</span>
@@ -536,7 +536,7 @@ export function GuardianBattle() {
                     placeholder={battle.phase === "shield" && encounter.shield.kind === "interrogation"
                       ? "Write one prompt intended to reproduce the hidden answer..."
                       : "Write the prompt your familiar will receive..."}
-                    className="mt-1.5 min-h-14 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
+                    className="mt-1.5 min-h-56 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
                   />
                   <div className="mt-2 flex flex-wrap items-center justify-end gap-3">
                     <div className="flex flex-wrap gap-2">
@@ -574,7 +574,7 @@ export function GuardianBattle() {
             )}
           </div>
 
-          <div className="liquid-glass encounter-glass animate-blur-fade-up flex flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
+          <div className="liquid-glass encounter-glass animate-blur-fade-up flex h-full flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
             <div>
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Party</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
@@ -590,9 +590,9 @@ export function GuardianBattle() {
               </div>
             </div>
 
-            <div className="min-h-0">
+            <div className="flex min-h-0 flex-1 flex-col">
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Combat log</p>
-              <div className="mt-1 max-h-16 space-y-1.5 overflow-y-auto pr-1 sm:max-h-20">
+              <div className="mt-1 flex-1 space-y-1.5 overflow-y-auto pr-1">
                 {log.length === 0 && <p className="text-xs text-zinc-600">No casts resolved yet.</p>}
                 {log.map((entry) => (
                   <div key={entry.turn} className="border-l-2 border-white/20 pl-2 text-[10px] leading-snug">
