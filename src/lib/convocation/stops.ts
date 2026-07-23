@@ -88,9 +88,9 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
       title: "The Echo Choir",
       flavor: "Three echoes answer at once. Two sound confident; only one survives checking.",
       brief:
-        "Ask the familiar to solve and check this: A sign says, 'I am thinking of an odd number. It is greater than 10 and less than 20. It is divisible by 3.' The impatient echo says 15. The trick is that the sign later adds, 'My number has exactly two distinct prime factors.' What number is it?",
+        "Ask the familiar to solve and check this: A sign says, 'I am thinking of an odd number. It is greater than 20 and less than 30. It is divisible by 3.' The impatient echo says 27. The trick is that the sign later adds, 'My number has exactly two distinct prime factors.' What number is it?",
       rubric:
-        "Score 1.0 for 15 with a check that it is odd, between 10 and 20, divisible by 3, and has exactly two distinct prime factors (3 and 5). Score 0.6-0.8 for 15 with partial checking. Score 0.2-0.5 for another number with some relevant reasoning. Score 0 for accepting or rejecting 15 without engaging the added condition. Elegance favors prompts that ask for independent checks or multiple voices without being verbose.",
+        "Score 1.0 for 21 with a check that it is odd, between 20 and 30, divisible by 3, and has exactly two distinct prime factors (3 and 7) — while 27 also fits the first three clues, 27 = 3^3 has only one distinct prime factor and fails the added condition. Score 0.6-0.8 for 21 with partial checking. Score 0.2-0.5 for another number with some relevant reasoning. Score 0 for accepting or rejecting 27 without engaging the added condition. Elegance favors prompts that ask for independent checks or multiple voices without being verbose.",
       expectedTokens: 58,
     },
   },
@@ -148,9 +148,9 @@ export const CONVOCATION_STOPS: ConvocationStop[] = [
       title: "The Covered Board",
       flavor: "A curtain falls between the familiar and the board. Only your wording can cross it.",
       brief:
-        "Relay this board to the familiar and ask for the only safe tile. A 3x3 board has traps at top-left, top-right, center, bottom-left, and bottom-right. The safe tile must not touch any trap horizontally or vertically.",
+        "Relay this board to the familiar and ask for the only safe tile. A 3x3 board has traps at all four corners. The safe tile must not touch any trap horizontally or vertically.",
       rubric:
-        "Score 1.0 for top-center or an equivalent coordinate description as the only safe tile. Score 0.6-0.8 for the right tile with extra prose. Score 0.2-0.5 for identifying a non-corner edge tile but not the exact one. Score 0 for choosing a trap or failing to reason about adjacency. Elegance favors short, lossless relay prompts rather than copying decorative flavor.",
+        "Score 1.0 for center or an equivalent coordinate description as the only safe tile — every edge tile touches two corner traps, but center touches none. Score 0.6-0.8 for the right tile with extra prose. Score 0.2-0.5 for identifying an edge tile but not the exact one. Score 0 for choosing a trap or failing to reason about adjacency. Elegance favors short, lossless relay prompts rather than copying decorative flavor.",
       expectedTokens: 52,
     },
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CroppedPortrait, PoseSprite, SceneBackground, wraithPortraitCrop } from "@/components/assets";
 import {
@@ -29,7 +29,7 @@ import {
   type InterrogationAnswer,
   type InterrogationState,
 } from "@/lib/guardian";
-import { applyXpGain } from "@/lib/xp";
+import { applyXpGain, XP_to_next } from "@/lib/xp";
 
 interface BattleLogEntry {
   turn: number;
@@ -46,6 +46,9 @@ const HURT_DURATION_MS = HURT_FRAME_COUNT * POSE_FRAME_DURATION_MS;
 
 /** Clearance the puzzle panel keeps from each `CombatHud` card — see `usePanelInsets`. */
 const PANEL_HUD_GAP_PX = 8;
+
+/** Clearance the rare terminal-state error notice keeps above the fixed bottom bar. */
+const CAST_BAR_GAP_PX = 16;
 
 const PHASE_LABEL: Record<GuardianBattleState["phase"], string> = {
   solo: "Solo phase",
@@ -81,6 +84,29 @@ export function GuardianBattle() {
     character?.level,
     character?.name,
   ]);
+
+  /** Fixed bottom bar's actual rendered height, measured live (same approach as `usePanelInsets`) so the rare terminal-state error notice below can reserve enough clearance without being covered. */
+  const castBarRef = useRef<HTMLDivElement>(null);
+  const [castBarHeight, setCastBarHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = castBarRef.current;
+    if (!el) {
+      setCastBarHeight(0);
+      return;
+    }
+    function measure() {
+      setCastBarHeight(el!.getBoundingClientRect().height);
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [encounter, battle?.phase, finalMode, interrogation, error]);
 
   useEffect(() => {
     if (!character) router.replace("/character/create");
@@ -267,9 +293,11 @@ export function GuardianBattle() {
   const playerPose = battle.phase === "defeat" ? "dying" : reactingSide === "player" ? "hurt" : "idle";
   const bossPose = battle.phase === "victory" ? "dying" : reactingSide === "boss" ? "hurt" : "idle";
 
+  const xpToNext = XP_to_next(character.level);
+
   const playerMeters: CombatMeterSpec[] = [
     {
-      label: character.name,
+      label: "HP",
       tone: "bg-emerald-300",
       fraction: character.startingHp <= 0 ? 0 : battle.playerHp / character.startingHp,
       showValue: true,
@@ -284,10 +312,18 @@ export function GuardianBattle() {
       value: battle.playerMana,
       max: character.startingMana,
     },
+    {
+      label: "XP",
+      tone: "bg-amber-300",
+      fraction: xpToNext <= 0 ? 0 : character.xp / xpToNext,
+      showValue: true,
+      value: character.xp,
+      max: xpToNext,
+    },
   ];
   const bossMeters: CombatMeterSpec[] = [
     {
-      label: "Threshold Guardian",
+      label: "HP",
       tone: "bg-red-400",
       fraction: battle.bossHp / GUARDIAN_MAX_HP,
       showValue: true,
@@ -297,7 +333,7 @@ export function GuardianBattle() {
   ];
 
   return (
-    <main className="min-h-screen bg-zinc-950 font-mono text-white">
+    <main className="font-early-gameboy min-h-screen bg-zinc-950 text-white">
       <section ref={battleSectionRef} className="relative min-h-[540px] overflow-hidden border-b border-white/15 sm:min-h-[600px]">
         <SceneBackground scene={TUTORIAL_ZONE_BACKGROUND} className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-black/30" />
@@ -308,7 +344,7 @@ export function GuardianBattle() {
             portrait={
               <PoseSprite presetId={character.sprite.presetId} pose="idle" size={COMBAT_HUD_PORTRAIT_SIZE} />
             }
-            caption={`Lv ${character.level}`}
+            caption={`Lv. ${character.level}`}
             align="left"
             meters={playerMeters}
           />
@@ -338,20 +374,15 @@ export function GuardianBattle() {
           <PuzzlePanel titleId="guardian-battle-title" className="h-[34vh] sm:h-auto sm:max-h-[38vh]">
             <PuzzlePanelHeader
               titleId="guardian-battle-title"
-              eyebrow={`Turn ${battle.turn} · ${currentPhaseLabel()}`}
               title={puzzle?.title ?? PHASE_LABEL[battle.phase]}
-              pills={
-                <>
-                  {puzzle && <Pill tone="emerald">{puzzle.family}</Pill>}
-                  {battle.phase === "shield" && <Pill tone="cyan">SHIELD ACTIVE</Pill>}
-                </>
-              }
+              titleAdornment={puzzle && <Pill tone="emerald">{puzzle.family}</Pill>}
+              pills={battle.phase === "shield" ? <Pill tone="cyan">SHIELD ACTIVE</Pill> : undefined}
             />
 
-            <div className="flex min-h-0 flex-col overflow-y-auto p-4 sm:p-5">
+            <div className="flex min-h-0 flex-col gap-3 overflow-y-auto px-3 pt-1 pb-3 sm:px-4 sm:pt-2 sm:pb-4">
             {!terminal && puzzle && (
               <>
-                <div className="mt-4 py-4 leading-relaxed">
+                <section className="rounded border border-white/15 bg-black/35 p-4">
                   <p className="text-zinc-400">{puzzle.flavor}</p>
                   {battle.phase === "shield" && encounter.shield.kind === "dependency-lock" && (
                     <div className="mt-4 border-l-2 border-cyan-300 bg-cyan-950/25 p-3">
@@ -360,11 +391,11 @@ export function GuardianBattle() {
                       <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-cyan-100">{encounter.shield.npcOutput}</pre>
                     </div>
                   )}
-                  <p className="mt-4 whitespace-pre-wrap text-white">{puzzle.brief}</p>
-                </div>
+                  <p className="mt-4 leading-relaxed whitespace-pre-wrap text-white">{puzzle.brief}</p>
+                </section>
 
                 {battle.phase === "shield" && encounter.shield.kind === "interrogation" && interrogation && (
-                  <div className="mt-4 py-4">
+                  <section className="rounded border border-white/15 bg-black/35 p-4">
                     <p className="text-xs text-zinc-500 uppercase">Party chat</p>
                     {interrogation.exchanges.length === 0 ? (
                       <p className="mt-2 text-sm text-zinc-600">No questions answered yet.</p>
@@ -384,13 +415,13 @@ export function GuardianBattle() {
                         })}
                       </ol>
                     )}
-                  </div>
+                  </section>
                 )}
               </>
             )}
 
             {terminal && (
-              <div className="mt-6 border-l-4 border-emerald-300 bg-black/35 p-5">
+              <div className="border-l-4 border-emerald-300 bg-black/35 p-5">
                 <h2 className="text-2xl font-bold">{battle.phase === "victory" ? "The shield goes dark." : "The gate rejects the run."}</h2>
                 <p className="mt-2 text-sm text-zinc-300">
                   {battle.phase === "victory"
@@ -440,132 +471,153 @@ export function GuardianBattle() {
         </div>
       </section>
 
-      {!terminal && puzzle && (
-        <section className="mx-auto max-w-2xl px-4 py-4 sm:px-6">
-          {battle.phase === "shield" &&
-          encounter.shield.kind === "interrogation" &&
-          interrogation &&
-          !finalMode ? (
-            <form onSubmit={askQuestion}>
-              <label htmlFor="guardian-question" className="text-xs text-zinc-500 uppercase">
-                Question {interrogation.exchanges.length + 1} of 4 · {interrogation.exchanges.length === 0
-                  ? character.name
-                  : encounter.allies[interrogation.exchanges.length - 1].name}
-              </label>
-              <textarea
-                id="guardian-question"
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                disabled={loading}
-                placeholder="Author this party member's yes/no question..."
-                className="mt-2 min-h-28 w-full resize-y border border-white/20 bg-black/45 p-3 text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
-              />
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <span className="text-xs text-zinc-500">Each party member gets one question.</span>
-                <div className="flex flex-wrap gap-2">
-                  {interrogation.exchanges.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setFinalMode(true)}
-                      className="rounded border border-emerald-300/60 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
-                    >
-                      Submit joint prompt
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={loading || !question.trim()}
-                    className="rounded bg-cyan-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-cyan-200 disabled:opacity-35"
-                  >
-                    {loading ? "Asking..." : "Ask Guardian"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={cast}>
-              <label htmlFor="guardian-prompt" className="text-xs text-zinc-500 uppercase">
-                {battle.phase === "shield" && encounter.shield.kind === "interrogation"
-                  ? "Final joint prompt"
-                  : "Your cast"}
-              </label>
-              <textarea
-                id="guardian-prompt"
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                disabled={loading}
-                placeholder={battle.phase === "shield" && encounter.shield.kind === "interrogation"
-                  ? "Write one prompt intended to reproduce the hidden answer..."
-                  : "Write the prompt your familiar will receive..."}
-                className="mt-2 min-h-32 w-full resize-y border border-white/20 bg-black/45 p-3 text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
-              />
-              <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
-                <div className="flex flex-wrap gap-2">
-                  {battle.phase === "shield" &&
-                    encounter.shield.kind === "interrogation" &&
-                    interrogation &&
-                    interrogation.exchanges.length < 4 && (
+      <div ref={castBarRef} className="fixed inset-x-2 bottom-2 z-30 sm:inset-x-6 sm:bottom-6">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-2 sm:grid-cols-5 sm:gap-3">
+          <div className="sm:col-span-3">
+            {!terminal && puzzle && (
+              battle.phase === "shield" &&
+              encounter.shield.kind === "interrogation" &&
+              interrogation &&
+              !finalMode ? (
+                <form
+                  onSubmit={askQuestion}
+                  className="liquid-glass encounter-glass animate-blur-fade-up w-full rounded-xl p-2.5 sm:p-3"
+                >
+                  <label htmlFor="guardian-question" className="text-xs text-zinc-500 uppercase">
+                    Question {interrogation.exchanges.length + 1} of 4 · {interrogation.exchanges.length === 0
+                      ? character.name
+                      : encounter.allies[interrogation.exchanges.length - 1].name}
+                  </label>
+                  <textarea
+                    id="guardian-question"
+                    value={question}
+                    onChange={(event) => setQuestion(event.target.value)}
+                    disabled={loading}
+                    placeholder="Author this party member's yes/no question..."
+                    className="mt-1.5 min-h-14 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-cyan-300 disabled:opacity-50"
+                  />
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs text-zinc-500">Each party member gets one question.</span>
+                    <div className="flex flex-wrap gap-2">
+                      {interrogation.exchanges.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFinalMode(true)}
+                          className="rounded border border-emerald-300/60 px-4 py-2 text-xs text-emerald-100 hover:bg-emerald-300/10"
+                        >
+                          Submit joint prompt
+                        </button>
+                      )}
                       <button
-                        type="button"
-                        onClick={() => setFinalMode(false)}
-                        className="rounded border border-white/20 px-4 py-2 text-xs hover:bg-white/10"
+                        type="submit"
+                        disabled={loading || !question.trim()}
+                        className="rounded bg-cyan-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-cyan-200 disabled:opacity-35"
                       >
-                        Ask another question
+                        {loading ? "Asking..." : "Ask Guardian"}
                       </button>
-                    )}
-                  <button
-                    type="submit"
-                    disabled={loading || !prompt.trim()}
-                    className="rounded bg-emerald-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-emerald-200 disabled:opacity-35"
-                  >
-                    {loading
-                      ? "Casting..."
-                      : battle.phase === "shield" && encounter.shield.kind === "interrogation"
-                        ? "Commit final prompt"
-                        : "Cast"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          )}
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <form
+                  onSubmit={cast}
+                  className="liquid-glass encounter-glass animate-blur-fade-up w-full rounded-xl p-2.5 sm:p-3"
+                >
+                  <label htmlFor="guardian-prompt" className="text-xs text-zinc-500 uppercase">
+                    {battle.phase === "shield" && encounter.shield.kind === "interrogation"
+                      ? "Final joint prompt"
+                      : "Your cast"}
+                  </label>
+                  <textarea
+                    id="guardian-prompt"
+                    value={prompt}
+                    onChange={(event) => setPrompt(event.target.value)}
+                    disabled={loading}
+                    placeholder={battle.phase === "shield" && encounter.shield.kind === "interrogation"
+                      ? "Write one prompt intended to reproduce the hidden answer..."
+                      : "Write the prompt your familiar will receive..."}
+                    className="mt-1.5 min-h-14 w-full resize-y border border-white/20 bg-black/45 p-2 font-mono text-sm leading-relaxed outline-none focus:border-emerald-300 disabled:opacity-50"
+                  />
+                  <div className="mt-2 flex flex-wrap items-center justify-end gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {battle.phase === "shield" &&
+                        encounter.shield.kind === "interrogation" &&
+                        interrogation &&
+                        interrogation.exchanges.length < 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setFinalMode(false)}
+                            className="rounded border border-white/20 px-4 py-2 text-xs hover:bg-white/10"
+                          >
+                            Ask another question
+                          </button>
+                        )}
+                      <button
+                        type="submit"
+                        disabled={loading || !prompt.trim()}
+                        className="rounded bg-emerald-300 px-5 py-2 text-sm font-bold text-zinc-950 hover:bg-emerald-200 disabled:opacity-35"
+                      >
+                        {loading
+                          ? "Casting..."
+                          : battle.phase === "shield" && encounter.shield.kind === "interrogation"
+                            ? "Commit final prompt"
+                            : "Cast"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )
+            )}
 
-          {error && <p className="mt-4 border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100">{error}</p>}
-        </section>
-      )}
+            {error && (
+              <p className="mt-2 border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100">{error}</p>
+            )}
+          </div>
+
+          <div className="liquid-glass encounter-glass animate-blur-fade-up flex flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
+            <div>
+              <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Party</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {[{ classId: "player", name: character.name }, ...encounter.allies].map((member) => (
+                  <span
+                    key={member.classId}
+                    title={member.name}
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[10px] text-cyan-200"
+                  >
+                    {member.name.slice(0, 1)}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="min-h-0">
+              <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Combat log</p>
+              <div className="mt-1 max-h-16 space-y-1.5 overflow-y-auto pr-1 sm:max-h-20">
+                {log.length === 0 && <p className="text-xs text-zinc-600">No casts resolved yet.</p>}
+                {log.map((entry) => (
+                  <div key={entry.turn} className="border-l-2 border-white/20 pl-2 text-[10px] leading-snug">
+                    <p className="text-zinc-500">Turn {entry.turn} · {entry.phase}</p>
+                    <p className="font-bold text-white">
+                      {entry.result.resolution.outcome.toUpperCase()}
+                      {entry.result.resolution.isCrit ? " · CRIT" : ""} · {entry.result.resolution.damage} dmg
+                    </p>
+                    <p className="text-zinc-400">{entry.result.judge.feedback}</p>
+                    <p className="text-emerald-300">+{entry.result.xpGained} XP · -{entry.result.manaCost} mana</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {terminal && error && (
-        <section className="mx-auto max-w-2xl px-4 py-4 sm:px-6">
-          <p className="border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100">{error}</p>
-        </section>
+        <div style={{ paddingBottom: castBarHeight > 0 ? castBarHeight + CAST_BAR_GAP_PX : undefined }}>
+          <section className="mx-auto max-w-2xl px-4 py-4 sm:px-6">
+            <p className="border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100">{error}</p>
+          </section>
+        </div>
       )}
-
-      <section className="mx-auto max-w-2xl px-4 pb-10 sm:px-6">
-        <p className="text-xs text-zinc-500 uppercase">Party</p>
-        <div className="mt-2 grid grid-cols-4 gap-2">
-          {[{ classId: "player", name: character.name }, ...encounter.allies].map((member) => (
-            <div key={member.classId} className="min-w-0 border border-white/15 bg-white/5 p-2 text-center">
-              <span className="block text-lg text-cyan-200">{member.name.slice(0, 1)}</span>
-              <span className="block truncate text-[10px] text-zinc-400" title={member.name}>{member.name}</span>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-6 text-xs text-zinc-500 uppercase">Combat log</p>
-        <div className="mt-2 max-h-80 space-y-3 overflow-y-auto pr-1">
-          {log.length === 0 && <p className="text-sm text-zinc-600">No casts resolved yet.</p>}
-          {log.map((entry) => (
-            <div key={entry.turn} className="border-l-2 border-white/20 pl-3 text-xs">
-              <p className="text-zinc-500">Turn {entry.turn} · {entry.phase}</p>
-              <p className="mt-1 font-bold text-white">
-                {entry.result.resolution.outcome.toUpperCase()}
-                {entry.result.resolution.isCrit ? " · CRIT" : ""} · {entry.result.resolution.damage} damage
-              </p>
-              <p className="mt-1 text-zinc-400">{entry.result.judge.feedback}</p>
-              <p className="mt-1 text-emerald-300">+{entry.result.xpGained} XP · -{entry.result.manaCost} mana</p>
-            </div>
-          ))}
-        </div>
-      </section>
     </main>
   );
 }
