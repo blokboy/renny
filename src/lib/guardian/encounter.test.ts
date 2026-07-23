@@ -11,6 +11,7 @@ import {
   GUARDIAN_SHIELD_THRESHOLD,
   pickShieldFamily,
   recordInterrogationAnswer,
+  simulateAllyCast,
   submitInterrogationFinal,
 } from "./encounter";
 
@@ -40,6 +41,21 @@ describe("Threshold Guardian encounter", () => {
     assert.equal(allies.length, 3);
     assert.equal(new Set(allies.map(({ classId }) => classId)).size, 3);
     assert.equal(allies.some(({ classId }) => classId === "wizard"), false);
+  });
+
+  it("rolls an ally cast outcome from the weighted table and only costs HP on a fail", () => {
+    const hit = simulateAllyCast(() => 0);
+    assert.equal(hit.outcome, "hit");
+    assert.equal(hit.damage, 0);
+
+    const miss = simulateAllyCast(() => 0.6);
+    assert.equal(miss.outcome, "miss");
+    assert.equal(miss.damage, 0);
+
+    const fail = simulateAllyCast(() => 0.999);
+    assert.equal(fail.outcome, "fail");
+    assert.ok(fail.damage > 0);
+    assert.ok(fail.manaCost > 0);
   });
 
   it("mechanically derives the player shard from the first NPC output", () => {

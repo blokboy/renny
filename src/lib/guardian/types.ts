@@ -39,7 +39,8 @@ export interface GuardianEncounter {
   id: string;
   generatedAt: string;
   playerClassId: ClassId;
-  soloPuzzle: GuardianPuzzle;
+  /** Two solo puzzles so a second one is ready the moment the first lands a hit — the player never re-solves the same brief while working the boss down to the shield threshold. */
+  soloPuzzles: [GuardianPuzzle, GuardianPuzzle];
   allies: GuardianAlly[];
   shield: GuardianShield;
 }

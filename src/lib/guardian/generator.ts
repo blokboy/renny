@@ -26,6 +26,7 @@ const generatedPuzzleSchema = z.object({
 
 const dependencyEncounterSchema = z.object({
   solo: generatedPuzzleSchema,
+  solo2: generatedPuzzleSchema,
   shield: z.object({
     title: z.string().min(1),
     flavor: z.string().min(1),
@@ -39,6 +40,7 @@ const dependencyEncounterSchema = z.object({
 
 const interrogationEncounterSchema = z.object({
   solo: generatedPuzzleSchema,
+  solo2: generatedPuzzleSchema,
   shield: z.object({
     title: z.string().min(1),
     flavor: z.string().min(1),
@@ -140,6 +142,7 @@ function proceduralDependencyFallback(
   seed: number,
 ): z.infer<typeof dependencyEncounterSchema> {
   const { solo, a, b, final } = proceduralSolo(soloFamily, seed);
+  const { solo: solo2 } = proceduralSolo(soloFamily, seed + 1);
   const npcOutput = shieldFamily === "Reverse-prompt" ? `The sealed number is ${final}.` : `Start=${a}; key=${b}; state=${final}.`;
   const handoffByFamily: Record<GuardianDependencyFamily, string> = {
     "Multi-hop state tracking": `Continue from that exact state: add ${b}, swap the first and last digits if possible, and report each transition.`,
@@ -148,6 +151,7 @@ function proceduralDependencyFallback(
   };
   return {
     solo,
+    solo2,
     shield: {
       title: "The Dependent Seal",
       flavor: "Three allied sigils ignite. One must speak before another can exist.",
@@ -165,6 +169,7 @@ function proceduralInterrogationFallback(
   seed: number,
 ): z.infer<typeof interrogationEncounterSchema> {
   const { solo } = proceduralSolo(soloFamily, seed);
+  const { solo: solo2 } = proceduralSolo(soloFamily, seed + 1);
   const targets = [
     {
       answer: "The bronze key waits beneath the third stair.",
@@ -186,6 +191,7 @@ function proceduralInterrogationFallback(
   const target = targets[seed % targets.length];
   return {
     solo,
+    solo2,
     shield: {
       title: "The Veiled Answer",
       flavor: "The Guardian seals an answer behind four yes-or-no sigils.",
@@ -212,7 +218,8 @@ async function askDependencyPuzzleMaster(
       "an NPC output must create information required by a later player shard.",
     prompt:
       `Player class: ${playerClassId}. Solo family: ${soloFamily}. Shield family: ${shieldFamily}.\n` +
-      "Return {solo:{title,flavor,brief,rubric,expectedTokens},shield:{title,flavor,npcTask,npcOutput,handoffInstruction,rubric,expectedTokens}}. " +
+      "Return {solo:{title,flavor,brief,rubric,expectedTokens},solo2:{title,flavor,brief,rubric,expectedTokens},shield:{title,flavor,npcTask,npcOutput,handoffInstruction,rubric,expectedTokens}}. " +
+      "`solo` and `solo2` are two distinct puzzles of the same family — different specifics (numbers, phrasing, targets) so the second never repeats the first. " +
       "Rubrics must define hit/partial/fail scoring and an elegance axis. Keep expectedTokens between 30 and 100.",
   });
   return dependencyEncounterSchema.parse(JSON.parse(extractJson(text)));
@@ -228,7 +235,8 @@ async function askInterrogationPuzzleMaster(playerClassId: ClassId, soloFamily: 
       "The public brief must not reveal the hidden answer. Facts must be sufficient to answer questions consistently.",
     prompt:
       `Player class: ${playerClassId}. Solo family: ${soloFamily}.\n` +
-      "Return {solo:{title,flavor,brief,rubric,expectedTokens},shield:{title,flavor,brief,hiddenAnswer,facts,rubric,expectedTokens}}. " +
+      "Return {solo:{title,flavor,brief,rubric,expectedTokens},solo2:{title,flavor,brief,rubric,expectedTokens},shield:{title,flavor,brief,hiddenAnswer,facts,rubric,expectedTokens}}. " +
+      "`solo` and `solo2` are two distinct puzzles of the same family — different specifics (numbers, phrasing, targets) so the second never repeats the first. " +
       "The shield rubric must identify the hidden answer and require semantic equivalence with no partial credit.",
   });
   return interrogationEncounterSchema.parse(JSON.parse(extractJson(text)));
@@ -255,7 +263,10 @@ export async function generateGuardianEncounter(
       id: encounterId,
       generatedAt: new Date().toISOString(),
       playerClassId,
-      soloPuzzle: makePuzzle(`${encounterId}-solo`, soloFamily, generated.solo),
+      soloPuzzles: [
+        makePuzzle(`${encounterId}-solo`, soloFamily, generated.solo),
+        makePuzzle(`${encounterId}-solo-2`, soloFamily, generated.solo2),
+      ],
       allies,
       shield: {
         kind: "interrogation",
@@ -288,7 +299,10 @@ export async function generateGuardianEncounter(
     id: encounterId,
     generatedAt: new Date().toISOString(),
     playerClassId,
-    soloPuzzle: makePuzzle(`${encounterId}-solo`, soloFamily, generated.solo),
+    soloPuzzles: [
+      makePuzzle(`${encounterId}-solo`, soloFamily, generated.solo),
+      makePuzzle(`${encounterId}-solo-2`, soloFamily, generated.solo2),
+    ],
     allies,
     shield: {
       kind: "dependency-lock",

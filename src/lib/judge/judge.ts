@@ -32,6 +32,7 @@ export async function judgeCast(
       'minified JSON matching {"score": number 0-1, "elegance": number 0-1, "feedback": ' +
       "string} — no markdown fences, no other text.",
     prompt:
+      `Task brief:\n${puzzle.brief}\n\n` +
       `Rubric:\n${puzzle.rubric}\n\n` +
       `Familiar's output:\n${familiarOutput}`,
   });

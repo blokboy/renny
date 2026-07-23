@@ -14,6 +14,7 @@ import {
   type CombatMeterSpec,
 } from "@/components/combat";
 import { TUTORIAL_ZONE_BACKGROUND } from "@/lib/assets";
+import type { Outcome } from "@/lib/combat/types";
 import {
   getCharacter,
   getStartingHp,
@@ -29,6 +30,7 @@ import {
   GUARDIAN_MAX_HP,
   markGuardianComplete,
   recordInterrogationAnswer,
+  simulateAllyCast,
   submitInterrogationFinal,
   type GuardianBattleState,
   type GuardianCastResponse,
@@ -39,10 +41,24 @@ import {
 } from "@/lib/guardian";
 import { applyXpGain, XP_to_next } from "@/lib/xp";
 
-interface BattleLogEntry {
-  turn: number;
-  phase: string;
-  result: GuardianCastResponse;
+type BattleLogEntry =
+  | { id: string; kind: "player"; turn: number; phase: string; result: GuardianCastResponse }
+  | {
+      id: string;
+      kind: "ally";
+      turn: number;
+      phase: string;
+      allyName: string;
+      outcome: Outcome;
+      damage: number;
+      manaCost: number;
+    };
+
+interface AllyBattleState {
+  hp: number;
+  maxHp: number;
+  mana: number;
+  maxMana: number;
 }
 
 const GUARDIAN_PRESET_ID = "wraith-03";
@@ -85,6 +101,8 @@ export function GuardianBattle() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [log, setLog] = useState<BattleLogEntry[]>([]);
+  /** NPC allies' simulated HP/mana — the solo phase never puts them through a real judge call, so their bars and log lines are driven by `simulateAllyCast` instead. Keyed by `classId`. */
+  const [allyStates, setAllyStates] = useState<Record<string, AllyBattleState>>({});
   /** Which side's sprite is mid-hurt-reaction from the most recently resolved cast — cleared back to idle once the reaction plays out (see the effect below), unless the fight has ended (see `playerPose`/`bossPose`). */
   const [reactingSide, setReactingSide] = useState<"player" | "boss" | null>(null);
 
@@ -150,6 +168,16 @@ export function GuardianBattle() {
       setInterrogation(data.shield.kind === "interrogation" ? createInterrogationState() : null);
       setFinalMode(false);
       setLog([]);
+      setAllyStates(
+        Object.fromEntries(
+          (data as GuardianEncounter).allies.map((ally) => {
+            const stats = getStatsAtLevel(ally.classId, 1);
+            const maxHp = getStartingHp(stats);
+            const maxMana = getStartingMana(stats);
+            return [ally.classId, { hp: maxHp, maxHp, mana: maxMana, maxMana }];
+          }),
+        ),
+      );
       setPrompt("");
       setQuestion("");
     } catch (cause) {
@@ -161,7 +189,10 @@ export function GuardianBattle() {
 
   function activePuzzle(): GuardianPuzzle | null {
     if (!encounter || !battle) return null;
-    return battle.phase === "shield" ? encounter.shield.puzzle : encounter.soloPuzzle;
+    if (battle.phase === "shield") return encounter.shield.puzzle;
+    // A hit already landed once `bossHp` has moved off its starting value — swap to the second
+    // solo puzzle so a second required hit never re-solves the exact same brief.
+    return encounter.soloPuzzles[battle.bossHp === GUARDIAN_MAX_HP ? 0 : 1];
   }
 
   function currentPhaseLabel(): string {
@@ -248,7 +279,44 @@ export function GuardianBattle() {
         terminalOnFail: isInterrogationFinal,
       });
       setBattle(next);
-      setLog((entries) => [{ turn: battle.turn, phase: currentPhaseLabel(), result }, ...entries]);
+
+      const phaseLabel = currentPhaseLabel();
+      const newEntries: BattleLogEntry[] = [
+        { id: `p-${battle.turn}`, kind: "player", turn: battle.turn, phase: phaseLabel, result },
+      ];
+
+      // The allies only fight for real once the shield phase brings them into a puzzle — during
+      // the solo phase they're cosmetic, so simulate a cast alongside the player's real one to
+      // keep their HUD bars and the combat log feeling like a live party fight.
+      if (battle.phase === "solo") {
+        for (const ally of encounter.allies) {
+          const sim = simulateAllyCast();
+          setAllyStates((prev) => {
+            const state = prev[ally.classId];
+            if (!state) return prev;
+            return {
+              ...prev,
+              [ally.classId]: {
+                ...state,
+                hp: Math.max(0, state.hp - (sim.outcome === "fail" ? sim.damage : 0)),
+                mana: Math.max(0, state.mana - sim.manaCost),
+              },
+            };
+          });
+          newEntries.push({
+            id: `a-${battle.turn}-${ally.classId}`,
+            kind: "ally",
+            turn: battle.turn,
+            phase: phaseLabel,
+            allyName: ally.name,
+            outcome: sim.outcome,
+            damage: sim.damage,
+            manaCost: sim.manaCost,
+          });
+        }
+      }
+
+      setLog((entries) => [...newEntries, ...entries]);
       setPrompt("");
       if (isInterrogationFinal && interrogation) {
         setInterrogation(submitInterrogationFinal(interrogation));
@@ -610,14 +678,14 @@ export function GuardianBattle() {
             )}
           </div>
 
-          <div className="liquid-glass encounter-glass animate-blur-fade-up flex h-full flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
+          <div className="liquid-glass encounter-glass animate-blur-fade-up flex h-full min-h-0 flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
             <div>
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Party</p>
               <div className="mt-1 grid grid-cols-3 place-items-center gap-1.5">
                 {encounter.allies.map((ally) => {
-                  const allyStats = getStatsAtLevel(ally.classId, 1);
-                  const allyHp = getStartingHp(allyStats);
-                  const allyMana = getStartingMana(allyStats);
+                  const state = allyStates[ally.classId];
+                  const hpPercent = state && state.maxHp > 0 ? (state.hp / state.maxHp) * 100 : 100;
+                  const manaPercent = state && state.maxMana > 0 ? (state.mana / state.maxMana) * 100 : 100;
                   return (
                     <div key={ally.classId} title={ally.name} className="flex w-full flex-col items-center gap-1">
                       <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/15 bg-white/5">
@@ -625,14 +693,20 @@ export function GuardianBattle() {
                       </div>
                       <div className="w-full max-w-14 space-y-0.5">
                         <div className="h-1 overflow-hidden rounded-full bg-black/50">
-                          <div className="h-full w-full rounded-full bg-emerald-300" />
+                          <div
+                            className="h-full rounded-full bg-emerald-300 transition-[width] duration-1000 ease-in"
+                            style={{ width: `${hpPercent}%` }}
+                          />
                         </div>
                         <div className="h-1 overflow-hidden rounded-full bg-black/50">
-                          <div className="h-full w-full rounded-full bg-cyan-300" />
+                          <div
+                            className="h-full rounded-full bg-cyan-300 transition-[width] duration-1000 ease-in"
+                            style={{ width: `${manaPercent}%` }}
+                          />
                         </div>
                       </div>
                       <span className="sr-only">
-                        {allyHp} HP · {allyMana} mana
+                        {state?.hp ?? 0} HP · {state?.mana ?? 0} mana
                       </span>
                     </div>
                   );
@@ -642,17 +716,29 @@ export function GuardianBattle() {
 
             <div className="flex min-h-0 flex-1 flex-col">
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Combat log</p>
-              <div className="mt-1 flex-1 space-y-1.5 overflow-y-auto pr-1">
+              <div className="mt-1 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
                 {log.length === 0 && <p className="text-xs text-zinc-600">No casts resolved yet.</p>}
                 {log.map((entry) => (
-                  <div key={entry.turn} className="border-l-2 border-white/20 pl-2 text-[10px] leading-snug">
+                  <div key={entry.id} className="border-l-2 border-white/20 pl-2 text-[10px] leading-snug">
                     <p className="text-zinc-500">Turn {entry.turn} · {entry.phase}</p>
-                    <p className="font-bold text-white">
-                      {entry.result.resolution.outcome.toUpperCase()}
-                      {entry.result.resolution.isCrit ? " · CRIT" : ""} · {entry.result.resolution.damage} dmg
-                    </p>
-                    <p className="text-zinc-400">{entry.result.judge.feedback}</p>
-                    <p className="text-emerald-300">+{entry.result.xpGained} XP · -{entry.result.manaCost} mana</p>
+                    {entry.kind === "player" ? (
+                      <>
+                        <p className="font-bold text-white">
+                          {entry.result.resolution.outcome.toUpperCase()}
+                          {entry.result.resolution.isCrit ? " · CRIT" : ""} · {entry.result.resolution.damage} dmg
+                        </p>
+                        <p className="text-zinc-400">{entry.result.judge.feedback}</p>
+                        <p className="text-emerald-300">+{entry.result.xpGained} XP · -{entry.result.manaCost} mana</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-bold text-white">
+                          {entry.allyName} · {entry.outcome.toUpperCase()}
+                          {entry.outcome === "fail" ? ` · ${entry.damage} dmg` : ""}
+                        </p>
+                        <p className="text-cyan-300">-{entry.manaCost} mana</p>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

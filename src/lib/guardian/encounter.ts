@@ -53,6 +53,45 @@ export function assignNpcAllies(
   }));
 }
 
+/** Cosmetic-only weighting for `simulateAllyCast` — the solo phase's NPC allies aren't judged for real, so this just needs to feel like a fight is happening alongside the player's. */
+const ALLY_OUTCOME_WEIGHTS: readonly { outcome: Outcome; weight: number }[] = [
+  { outcome: "hit", weight: 0.55 },
+  { outcome: "miss", weight: 0.25 },
+  { outcome: "fail", weight: 0.2 },
+];
+
+export interface AllyCastSimulation {
+  outcome: Outcome;
+  damage: number;
+  manaCost: number;
+}
+
+/**
+ * Simulates one NPC ally's cast during the solo phase — allies don't have a
+ * real judge call (only the player's prompt is scored), so this fabricates a
+ * plausible outcome to drive their HP/mana bars and combat log lines. A
+ * "fail" costs the ally HP (mirroring `applyGuardianCast`'s player damage
+ * rule); every outcome costs mana.
+ */
+export function simulateAllyCast(rng: () => number = Math.random): AllyCastSimulation {
+  const roll = rng();
+  let cumulative = 0;
+  let outcome: Outcome = ALLY_OUTCOME_WEIGHTS[ALLY_OUTCOME_WEIGHTS.length - 1].outcome;
+  for (const entry of ALLY_OUTCOME_WEIGHTS) {
+    cumulative += entry.weight;
+    if (roll < cumulative) {
+      outcome = entry.outcome;
+      break;
+    }
+  }
+
+  return {
+    outcome,
+    damage: outcome === "fail" ? 8 + Math.floor(rng() * 10) : 0,
+    manaCost: 4 + Math.floor(rng() * 6),
+  };
+}
+
 export function buildDependencyShard(
   family: GuardianDependencyFamily,
   npcOutput: string,
