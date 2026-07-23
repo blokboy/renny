@@ -13,7 +13,14 @@ import {
   type CombatMeterSpec,
 } from "@/components/combat";
 import { TUTORIAL_ZONE_BACKGROUND } from "@/lib/assets";
-import { getCharacter, saveCharacter, type CharacterRecord } from "@/lib/character";
+import {
+  getCharacter,
+  getStartingHp,
+  getStartingMana,
+  getStatsAtLevel,
+  saveCharacter,
+  type CharacterRecord,
+} from "@/lib/character";
 import {
   applyGuardianCast,
   createInterrogationState,
@@ -334,7 +341,13 @@ export function GuardianBattle() {
 
   return (
     <main className="font-early-gameboy min-h-screen bg-zinc-950 text-white">
-      <section ref={battleSectionRef} className="relative min-h-[540px] overflow-hidden border-b border-white/15 sm:min-h-[600px]">
+      <section
+        ref={battleSectionRef}
+        className="relative min-h-[540px] overflow-hidden sm:min-h-[600px]"
+        style={{
+          minHeight: castBarHeight > 0 ? `calc(100vh - ${castBarHeight + CAST_BAR_GAP_PX}px)` : undefined,
+        }}
+      >
         <SceneBackground scene={TUTORIAL_ZONE_BACKGROUND} className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-black/30" />
 
@@ -442,25 +455,23 @@ export function GuardianBattle() {
           </PuzzlePanel>
         </div>
 
-        <div className="absolute inset-x-5 bottom-2 flex items-end justify-between sm:inset-x-16">
-          <div className="flex items-end gap-1 sm:gap-3">
+        <div className="absolute inset-x-5 bottom-[108px] flex items-center justify-between sm:inset-x-16">
+          <div className="flex flex-col items-center gap-1 sm:gap-2">
+            {encounter.allies.map((ally) => (
+              <PoseSprite
+                key={ally.classId}
+                presetId={ally.classId}
+                pose="idle"
+                size={64}
+                className="opacity-90 drop-shadow-[0_6px_2px_rgba(0,0,0,0.6)]"
+              />
+            ))}
             <PoseSprite
               presetId={character.sprite.presetId}
               pose={playerPose}
-              size={118}
+              size={64}
               className="drop-shadow-[0_8px_3px_rgba(0,0,0,0.7)]"
             />
-            <div className="mb-2 flex items-end gap-1 sm:gap-2">
-              {encounter.allies.map((ally) => (
-                <PoseSprite
-                  key={ally.classId}
-                  presetId={ally.classId}
-                  pose="idle"
-                  size={64}
-                  className="opacity-90 drop-shadow-[0_6px_2px_rgba(0,0,0,0.6)]"
-                />
-              ))}
-            </div>
           </div>
           <PoseSprite
             presetId={GUARDIAN_PRESET_ID}
@@ -577,16 +588,30 @@ export function GuardianBattle() {
           <div className="liquid-glass encounter-glass animate-blur-fade-up flex h-full flex-col gap-2 rounded-xl p-2.5 sm:col-span-2 sm:p-3">
             <div>
               <p className="text-[10px] tracking-wide text-zinc-400 uppercase">Party</p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {[{ classId: "player", name: character.name }, ...encounter.allies].map((member) => (
-                  <span
-                    key={member.classId}
-                    title={member.name}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[10px] text-cyan-200"
-                  >
-                    {member.name.slice(0, 1)}
-                  </span>
-                ))}
+              <div className="mt-1 grid grid-cols-3 place-items-center gap-1.5">
+                {encounter.allies.map((ally) => {
+                  const allyStats = getStatsAtLevel(ally.classId, 1);
+                  const allyHp = getStartingHp(allyStats);
+                  const allyMana = getStartingMana(allyStats);
+                  return (
+                    <div key={ally.classId} title={ally.name} className="flex w-full flex-col items-center gap-1">
+                      <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/15 bg-white/5">
+                        <PoseSprite presetId={ally.classId} pose="idle" size={48} />
+                      </div>
+                      <div className="w-full max-w-14 space-y-0.5">
+                        <div className="h-1 overflow-hidden rounded-full bg-black/50">
+                          <div className="h-full w-full rounded-full bg-emerald-300" />
+                        </div>
+                        <div className="h-1 overflow-hidden rounded-full bg-black/50">
+                          <div className="h-full w-full rounded-full bg-cyan-300" />
+                        </div>
+                      </div>
+                      <span className="sr-only">
+                        {allyHp} HP · {allyMana} mana
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
