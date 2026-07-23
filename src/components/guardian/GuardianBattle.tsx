@@ -357,7 +357,7 @@ export function GuardianBattle() {
             portrait={
               <PoseSprite presetId={character.sprite.presetId} pose="idle" size={COMBAT_HUD_PORTRAIT_SIZE} />
             }
-            caption={`Lv. ${character.level}`}
+            caption="Lv. 1"
             align="left"
             meters={playerMeters}
           />
